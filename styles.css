@@ -605,6 +605,15 @@ select.priority-select {
     display: none;
 }
 
+/* ── Outline (phantom / unscheduled) bars ───────────────────────────────── */
+
+.stage-bar.outline {
+    background: transparent;
+    border-style: dashed;
+    border-width: 2px;
+    opacity: 0.7;
+}
+
 /* ── Drag tooltip ───────────────────────────────────────────────────────── */
 
 .drag-tooltip {
@@ -617,5 +626,19 @@ select.priority-select {
     border-radius: 5px;
     pointer-events: none;
     white-space: nowrap;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, .35);
+}
+
+.info-tooltip {
+    position: fixed;
+    z-index: 500;
+    background: rgba(30, 30, 30, .92);
+    color: #fff;
+    font-size: .8rem;
+    padding: .5em .8em;
+    border-radius: 5px;
+    pointer-events: none;
+    white-space: pre;
+    line-height: 1.6;
     box-shadow: 0 3px 8px rgba(0, 0, 0, .35);
 }

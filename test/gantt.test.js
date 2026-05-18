@@ -132,14 +132,33 @@ describe("dateToX()", () => {
     expect(x).to.be.above(0);
   });
 
-  it("returns a value proportional to dayWidth per calendar day", () => {
-    const tl = buildTimeline([makeJob("2026-06-10", "2026-06-20")], true);
+  it("returns a value proportional to dayWidth per calendar day (calendar mode)", () => {
+    const tl = buildTimeline([makeJob("2026-06-10", "2026-06-20")], false);
     // Two dates exactly 7 calendar days apart
     const dateA = new Date(tl.startDate);
     const dateB = new Date(tl.startDate);
     dateB.setDate(dateB.getDate() + 7);
     const diff = dateToX(tl, dateB) - dateToX(tl, dateA);
     expect(diff).to.equal(7 * tl.dayWidth);
+  });
+
+  it("in working-days mode, weekend days map to the same x as the preceding Friday", () => {
+    const tl = buildTimeline([makeJob("2026-06-10", "2026-06-20")], true);
+    let friday = new Date(tl.startDate);
+    while (friday.getDay() !== 5) friday.setDate(friday.getDate() + 1);
+    const saturday = new Date(friday); saturday.setDate(saturday.getDate() + 1);
+    const sunday   = new Date(friday); sunday.setDate(sunday.getDate()   + 2);
+    expect(dateToX(tl, saturday)).to.equal(dateToX(tl, friday));
+    expect(dateToX(tl, sunday)).to.equal(dateToX(tl, friday));
+  });
+
+  it("in working-days mode, Mon→Mon+7 calendar days spans 5 * dayWidth", () => {
+    const tl = buildTimeline([makeJob("2026-06-10", "2026-06-20")], true);
+    let monday = new Date(tl.startDate);
+    while (monday.getDay() !== 1) monday.setDate(monday.getDate() + 1);
+    const nextMonday = new Date(monday); nextMonday.setDate(nextMonday.getDate() + 7);
+    const diff = dateToX(tl, nextMonday) - dateToX(tl, monday);
+    expect(diff).to.equal(5 * tl.dayWidth);
   });
 
   it("returns a negative number for a date before startDate", () => {
@@ -168,12 +187,26 @@ describe("xToDate()", () => {
     expect(fmt(back)).to.equal(fmt(date));
   });
 
-  it("returns a date N days from startDate for x = N * dayWidth", () => {
-    const tl = buildTimeline([makeJob("2026-06-10", "2026-06-20")], true);
+  it("returns a date N calendar days from startDate for x = N * dayWidth (calendar mode)", () => {
+    const tl = buildTimeline([makeJob("2026-06-10", "2026-06-20")], false);
     const x = 5 * tl.dayWidth;
     const result = xToDate(tl, x);
     const expected = new Date(tl.startDate);
     expected.setDate(expected.getDate() + 5);
+    expect(fmt(result)).to.equal(fmt(expected));
+  });
+
+  it("in working-days mode, x = N * dayWidth returns the Nth working day from startDate", () => {
+    const tl = buildTimeline([makeJob("2026-06-10", "2026-06-20")], true);
+    const x = 5 * tl.dayWidth;
+    const result = xToDate(tl, x);
+    // Build expected: 5 working days after startDate
+    let expected = new Date(tl.startDate);
+    let count = 0;
+    while (count < 5) {
+      expected.setDate(expected.getDate() + 1);
+      if (expected.getDay() !== 0 && expected.getDay() !== 6) count++;
+    }
     expect(fmt(result)).to.equal(fmt(expected));
   });
 });

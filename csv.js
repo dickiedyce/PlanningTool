@@ -216,11 +216,12 @@ export function parseStageDates(text, templates) {
       owner: tmpl.defaultOwner,
       defaultDurationDays: tmpl.defaultDurationDays,
       color: tmpl.color ?? "",
+      isOutline: false,
       status: row[`${tmpl.name} Status`] ?? "",
-      actualStart: row[`${tmpl.name} Actual Start`] ?? "",
-      actualEnd: row[`${tmpl.name} Actual End`] ?? "",
+      actualStart: row[`${tmpl.name} Actual Start`]  ?? "",
+      actualEnd:   row[`${tmpl.name} Actual End`]    ?? "",
       plannedStart: row[`${tmpl.name} Planned Start`] ?? "",
-      plannedEnd: row[`${tmpl.name} Planned End`] ?? "",
+      plannedEnd:   row[`${tmpl.name} Planned End`]   ?? "",
     }));
 
     return {

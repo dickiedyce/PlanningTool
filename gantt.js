@@ -8,7 +8,7 @@
  *   renderTimeline(headerEl, rowsEl, jobs, workingDaysMode)
  */
 
-import { addWorkingDays, isWorkingDay, nextWorkingDay } from "./dates.js";
+import { addWorkingDays, isWorkingDay, nextWorkingDay, workingDaysBetween } from "./dates.js";
 
 // Pixels per calendar day — matches CSS --gantt-day-w
 const DAY_WIDTH = 28;
@@ -146,6 +146,13 @@ export function buildTimeline(jobs, workingDaysMode) {
  * @returns {number}
  */
 export function dateToX(timeline, date) {
+  if (timeline.workingDaysMode) {
+    // Working-days mode: weekends contribute zero width
+    if (date <= timeline.startDate) {
+      return -workingDaysBetween(date, timeline.startDate) * timeline.dayWidth;
+    }
+    return workingDaysBetween(timeline.startDate, date) * timeline.dayWidth;
+  }
   const msPerDay = 24 * 60 * 60 * 1000;
   const calDays = (date - timeline.startDate) / msPerDay;
   return calDays * timeline.dayWidth;
@@ -159,6 +166,10 @@ export function dateToX(timeline, date) {
  * @returns {Date}
  */
 export function xToDate(timeline, x) {
+  if (timeline.workingDaysMode) {
+    const n = Math.round(x / timeline.dayWidth);
+    return addWorkingDays(timeline.startDate, n);
+  }
   const calDays = Math.round(x / timeline.dayWidth);
   return addCalendarDays(timeline.startDate, calDays);
 }
@@ -221,6 +232,12 @@ function renderHeader(headerEl, tl) {
     const isWeekend = dow === 0 || dow === 6;
     const isToday = cursor.getTime() === today.getTime();
 
+    // In working-days mode, skip weekend columns entirely
+    if (tl.workingDaysMode && isWeekend) {
+      cursor.setDate(cursor.getDate() + 1);
+      continue;
+    }
+
     // Weekend background column
     if (isWeekend) {
       const col = document.createElement("div");
@@ -262,7 +279,7 @@ function renderHeader(headerEl, tl) {
 
 /** Add light weekend-stripe divs behind bars so they're below stage bars. */
 function renderWeekendStripes(cell, tl) {
-  if (!tl.workingDaysMode) return; // stripes only relevant in working-days mode
+  if (tl.workingDaysMode) return; // no stripes when weekends are collapsed
   const cursor = new Date(tl.startDate);
   while (cursor <= tl.endDate) {
     const dow = cursor.getDay();
@@ -303,7 +320,7 @@ function stageBarSpec(stage) {
     return { start: aStart, end, type: "inprog" };
   }
   if (pStart && pEnd) {
-    return { start: pStart, end: pEnd, type: "planned" };
+    return { start: pStart, end: pEnd, type: "planned", isOutline: !!stage.isOutline };
   }
   return null;
 }
@@ -344,6 +361,12 @@ function renderJobBars(cell, job, tl, onUpdate) {
         bar.style.borderColor = stage.color;
       }
     }
+    // Outline bars override to transparent fill with dashed border
+    if (spec.isOutline) {
+      bar.classList.add("outline");
+      bar.style.background  = "transparent";
+      if (stage.color) bar.style.borderColor = stage.color;
+    }
     ["left", "right"].forEach((side) => {
       const handle = document.createElement("div");
       handle.className = `resize-handle ${side}`;
@@ -359,13 +382,13 @@ function renderJobBars(cell, job, tl, onUpdate) {
       tt.textContent = `${stage.name}  ·  ${formatDate(spec.start)} → ${formatDate(spec.end)}`;
       tt.classList.remove("hidden");
       tt.style.left = `${Math.min(e.clientX + 14, window.innerWidth - tt.offsetWidth - 8)}px`;
-      tt.style.top  = `${e.clientY + 20}px`;
+      tt.style.top = `${e.clientY + 20}px`;
     });
     bar.addEventListener("mousemove", (e) => {
       if (_isDragging) return;
       const tt = getDragTooltip();
       tt.style.left = `${Math.min(e.clientX + 14, window.innerWidth - tt.offsetWidth - 8)}px`;
-      tt.style.top  = `${e.clientY + 20}px`;
+      tt.style.top = `${e.clientY + 20}px`;
     });
     bar.addEventListener("mouseleave", () => {
       if (_isDragging) return;
@@ -396,7 +419,7 @@ function getDragTooltip() {
 function updateDragTooltip(tooltip, name, start, end, cx, cy) {
   tooltip.textContent = `${name}  ·  ${formatDate(start)} → ${formatDate(end)}`;
   tooltip.style.left = `${Math.min(cx + 14, window.innerWidth - tooltip.offsetWidth - 8)}px`;
-  tooltip.style.top  = `${cy + 20}px`;
+  tooltip.style.top = `${cy + 20}px`;
 }
 
 function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
@@ -441,9 +464,12 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
     const tooltip = getDragTooltip();
     tooltip.classList.remove("hidden");
     updateDragTooltip(
-      tooltip, stage.name,
-      xToDate(tl, origLeft), xToDate(tl, origLeft + origWidth),
-      e.clientX, e.clientY,
+      tooltip,
+      stage.name,
+      xToDate(tl, origLeft),
+      xToDate(tl, origLeft + origWidth),
+      e.clientX,
+      e.clientY,
     );
 
     function onMove(me) {
@@ -463,12 +489,15 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
       }
 
       // Update tooltip with live dates
-      const curLeft  = parseFloat(bar.style.left);
+      const curLeft = parseFloat(bar.style.left);
       const curWidth = parseFloat(bar.style.width);
       updateDragTooltip(
-        tooltip, stage.name,
-        xToDate(tl, curLeft), xToDate(tl, curLeft + curWidth),
-        me.clientX, me.clientY,
+        tooltip,
+        stage.name,
+        xToDate(tl, curLeft),
+        xToDate(tl, curLeft + curWidth),
+        me.clientX,
+        me.clientY,
       );
     }
 
@@ -483,6 +512,11 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
 
       const newStart = xToDate(tl, finalLeft);
       const newEnd = xToDate(tl, finalLeft + finalWidth);
+
+      // If this was a phantom outline bar, the user is now giving it real dates
+      if (spec.isOutline) {
+        stage.isOutline = false;
+      }
 
       // Write back to the stage so export and recalculation see the changes
       if (isLeft || isMove) {

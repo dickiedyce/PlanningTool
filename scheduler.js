@@ -134,6 +134,7 @@ export function recalculateFromStage(job, stageIndex, workingDaysMode) {
 
     stage.plannedStart = formatStartDate(start);
     stage.plannedEnd = formatEndDate(end);
+    stage.isOutline = false; // stage is now scheduled by real recalculation
     baseEnd = end;
   }
 

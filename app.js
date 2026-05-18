@@ -9,6 +9,7 @@ import { parseTemplates, parseStageDates } from "./csv.js";
 import { renderTimeline, renderKey } from "./gantt.js";
 import { recalculateFromStage } from "./scheduler.js";
 import { exportStageDates, triggerDownload } from "./export.js";
+import { addWorkingDays, nextWorkingDay } from "./dates.js";
 
 // ---------------------------------------------------------------------------
 // Application state
@@ -149,6 +150,9 @@ async function loadPlanner() {
 
     const templates = parseTemplates(tplText);
     const jobs = parseStageDates(datesText, templates);
+
+    // Generate phantom outline bars for fully unscheduled jobs
+    jobs.forEach((job) => fillOutlineSchedule(job));
 
     state.templates = templates;
     state.jobs = jobs;
@@ -375,7 +379,122 @@ function buildJobRow(job) {
   // Row drag-and-drop
   wireRowDrag(row, job);
 
+  // Rich info-cell hover tooltip
+  wireInfoTooltip(row.querySelector(".col-jobs"), job);
+
   return row;
+}
+
+// ---------------------------------------------------------------------------
+// Outline bar generation (item B)
+// ---------------------------------------------------------------------------
+
+/** Format a date as "YYYY-MM-DD 08:00" (stage start) */
+function fmtOutlineStart(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d} 08:00`;
+}
+
+/** Format a date as "YYYY-MM-DD 17:00" (stage end) */
+function fmtOutlineEnd(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d} 17:00`;
+}
+
+/**
+ * If a job has no planned dates at all, inject phantom outline dates
+ * starting from the Monday of next working week. Marks each stage with
+ * isOutline = true so the renderer can style them as dashed bars and
+ * the exporter can suppress them.
+ *
+ * @param {Object} job
+ */
+function fillOutlineSchedule(job) {
+  const hasAnyPlanned = job.stages.some((s) => s.plannedStart && s.plannedEnd);
+  if (hasAnyPlanned) return;
+
+  // Monday of next working week
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dod = today.getDay(); // 0=Sun, 1=Mon, …, 6=Sat
+  const daysToNextMon = dod === 0 ? 1 : dod === 1 ? 7 : 8 - dod;
+  let cursor = new Date(today);
+  cursor.setDate(cursor.getDate() + daysToNextMon);
+
+  for (const stage of job.stages) {
+    if (stage.status === "NotApplicable") continue;
+    const dur = stage.defaultDurationDays ?? 5;
+    const end = addWorkingDays(cursor, dur);
+    stage.plannedStart = fmtOutlineStart(cursor);
+    stage.plannedEnd   = fmtOutlineEnd(end);
+    stage.isOutline    = true;
+    cursor = nextWorkingDay(end);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Info-cell hover tooltip
+// ---------------------------------------------------------------------------
+
+let _infoTooltip = null;
+function getInfoTooltip() {
+  if (!_infoTooltip) {
+    _infoTooltip = document.createElement("div");
+    _infoTooltip.className = "info-tooltip hidden";
+    document.body.appendChild(_infoTooltip);
+  }
+  return _infoTooltip;
+}
+
+function jobDateSummary(job) {
+  const planned = { start: null, end: null };
+  const actual  = { start: null, end: null };
+  for (const stage of job.stages) {
+    const ps = stage.plannedStart?.slice(0, 10);
+    const pe = stage.plannedEnd?.slice(0, 10);
+    const as = stage.actualStart?.slice(0, 10);
+    const ae = stage.actualEnd?.slice(0, 10);
+    if (ps && (!planned.start || ps < planned.start)) planned.start = ps;
+    if (pe && (!planned.end   || pe > planned.end))   planned.end   = pe;
+    if (as && (!actual.start  || as < actual.start))  actual.start  = as;
+    if (ae && (!actual.end    || ae > actual.end))     actual.end    = ae;
+  }
+  return { planned, actual };
+}
+
+function wireInfoTooltip(cell, job) {
+  function show(e) {
+    const { planned, actual } = jobDateSummary(job);
+    const lines = [
+      `${job.jobKey}  —  ${job.jobName}`,
+      `Client:     ${job.client      || "—"}`,
+      `Initiative: ${job.initiative  || "—"}`,
+      `Priority:   ${job.priority    || "—"}   Team: ${job.teamPriority || "—"}`,
+    ];
+    if (planned.start || planned.end)
+      lines.push(`Planned: ${planned.start || "?"} → ${planned.end || "?"}`);
+    if (actual.start || actual.end)
+      lines.push(`Actual:  ${actual.start  || "?"} → ${actual.end  || "in progress"}`);
+    const tt = getInfoTooltip();
+    tt.textContent = lines.join("\n");
+    tt.classList.remove("hidden");
+    position(tt, e);
+  }
+  function move(e) {
+    const tt = getInfoTooltip();
+    if (!tt.classList.contains("hidden")) position(tt, e);
+  }
+  function position(tt, e) {
+    tt.style.left = `${Math.min(e.clientX + 14, window.innerWidth - tt.offsetWidth - 8)}px`;
+    tt.style.top  = `${e.clientY + 20}px`;
+  }
+  cell.addEventListener("mouseenter", show);
+  cell.addEventListener("mousemove",  move);
+  cell.addEventListener("mouseleave", () => getInfoTooltip().classList.add("hidden"));
 }
 
 /** Escape HTML entities to prevent XSS from CSV data */

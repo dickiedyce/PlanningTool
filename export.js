@@ -59,7 +59,12 @@ function buildRow(job) {
     for (const [suffix, getter] of Object.entries(UPDATED_STAGE_FIELDS)) {
       const col = `${stage.name} ${suffix}`;
       if (col in row) {
-        row[col] = getter(stage) ?? "";
+        // Outline stages have phantom planned dates — never export them
+        if (stage.isOutline && (suffix === "Planned Start" || suffix === "Planned End")) {
+          row[col] = "";
+        } else {
+          row[col] = getter(stage) ?? "";
+        }
       }
     }
   }
