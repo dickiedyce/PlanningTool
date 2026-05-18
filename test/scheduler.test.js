@@ -98,20 +98,19 @@ describe("recalculateFromStage() — working-days mode", () => {
   });
 
   it("cascades planned dates from the pivot stage onward", () => {
-    // Stage 1 (Implement API) planned end = 2026-05-06 + 10 wd
-    // 2026-05-06 is Wednesday; 10 wd later = 2026-05-20 (Wednesday)
-    // Stage 2 (Unit Tests) starts next wd after 2026-05-20 = 2026-05-21 (Thu)
-    // Stage 2 ends 2026-05-21 + 4 wd = 2026-05-27 (Wed)
+    // Stage 1 (Implement API): planned 2026-05-06 → 2026-05-15 = 7 working days
+    // 2026-05-06 + 7 wd = 2026-05-15 (Fri)
+    // Stage 2 (Unit Tests): planned 2026-05-18 → 2026-05-21 = 3 working days
+    // next wd after 2026-05-15 = 2026-05-18 (Mon); 2026-05-18 + 3 wd = 2026-05-21 (Thu)
     const job = makeJob();
-    // Move pivot: stage[1] plannedStart = 2026-05-06
     const result = recalculateFromStage(job, 1, true);
     const impl = result.stages[1];
     const ut = result.stages[2];
 
-    expect(impl.plannedStart).to.equal("2026-05-06");
-    expect(impl.plannedEnd).to.equal("2026-05-20"); // Wed 6 + 10 wd = Wed 20
-    expect(ut.plannedStart).to.equal("2026-05-21"); // next wd after Wed 20 = Thu 21
-    expect(ut.plannedEnd).to.equal("2026-05-27"); // Thu 21 + 4 wd = Wed 27
+    expect(impl.plannedStart).to.equal("2026-05-06 08:00");
+    expect(impl.plannedEnd).to.equal("2026-05-15 17:00");   // 7 wd from Wed 6 = Fri 15
+    expect(ut.plannedStart).to.equal("2026-05-18 08:00");   // next wd after Fri 15 = Mon 18
+    expect(ut.plannedEnd).to.equal("2026-05-21 17:00");     // 3 wd from Mon 18 = Thu 21
   });
 
   it("uses the actualEnd of a complete stage as the base for the next stage", () => {
@@ -119,7 +118,7 @@ describe("recalculateFromStage() — working-days mode", () => {
     // Stage 1 (pivot=0) should start on nextWorkingDay(2026-05-05) = 2026-05-06
     const job = makeJob();
     const result = recalculateFromStage(job, 0, true);
-    expect(result.stages[1].plannedStart).to.equal("2026-05-06");
+    expect(result.stages[1].plannedStart).to.equal("2026-05-06 08:00");
   });
 
   it("does not overwrite actual dates on Complete stages during cascade", () => {
@@ -140,8 +139,8 @@ describe("recalculateFromStage() — working-days mode", () => {
     const result = recalculateFromStage(job, 0, true);
     // stage[1] is skipped; stage[2] plannedStart = nextWD after stage[0].actualEnd
     const ut = result.stages[2];
-    expect(ut.plannedStart).to.equal("2026-05-06");
-    expect(ut.plannedEnd).to.equal("2026-05-12"); // 2026-05-06 + 4 wd = 2026-05-12 (Tue)
+    expect(ut.plannedStart).to.equal("2026-05-06 08:00");
+    expect(ut.plannedEnd).to.equal("2026-05-11 17:00"); // 2026-05-06 + 3 wd (current dur) = 2026-05-11 (Mon)
   });
 
   it("planned dates land on working days (never Saturday or Sunday)", () => {
@@ -161,16 +160,17 @@ describe("recalculateFromStage() — working-days mode", () => {
 
 describe("recalculateFromStage() — calendar-days mode", () => {
   it("adds duration in calendar days, not working days", () => {
-    // Stage[1] starts 2026-05-06 (Wed), duration=10 calendar days → ends 2026-05-16 (Sat)
+    // Stage[1]: planned 2026-05-06 → 2026-05-15 = 9 calendar days
+    // 2026-05-06 + 9 cd = 2026-05-15 (no weekend skipping)
     const job = makeJob();
     const result = recalculateFromStage(job, 1, false);
-    expect(result.stages[1].plannedEnd).to.equal("2026-05-16");
+    expect(result.stages[1].plannedEnd).to.equal("2026-05-15 17:00");
   });
 
   it("does not skip weekends when advancing to next stage", () => {
     const job = makeJob();
     const result = recalculateFromStage(job, 1, false);
-    // Stage[2] starts day after stage[1] ends (2026-05-16 + 1 = 2026-05-17)
-    expect(result.stages[2].plannedStart).to.equal("2026-05-17");
+    // Stage[2] starts day after stage[1] ends (2026-05-15 + 1 = 2026-05-16)
+    expect(result.stages[2].plannedStart).to.equal("2026-05-16 08:00");
   });
 });

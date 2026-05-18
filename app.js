@@ -285,7 +285,11 @@ function onGanttUpdate(job, stageIndex) {
   state.dirty = true;
   // Cascade-recalculate all subsequent stages after the one that was dragged
   if (job != null && stageIndex != null && stageIndex + 1 < job.stages.length) {
-    const updated = recalculateFromStage(job, stageIndex + 1, state.workingDaysMode);
+    const updated = recalculateFromStage(
+      job,
+      stageIndex + 1,
+      state.workingDaysMode,
+    );
     job.stages = updated.stages; // update stages in-place on the state.jobs entry
   }
   // Re-render bars (rows already in DOM)

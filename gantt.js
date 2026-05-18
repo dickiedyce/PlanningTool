@@ -34,6 +34,10 @@ function formatDate(date) {
   return `${y}-${m}-${d}`;
 }
 
+/** Stage-start timestamps at 08:00, stage-end timestamps at 17:00 */
+function formatStartDate(date) { return formatDate(date) + " 08:00"; }
+function formatEndDate(date)   { return formatDate(date) + " 17:00"; }
+
 /** Subtract n calendar days from date, returning a new Date */
 function subCalendarDays(date, n) {
   const r = new Date(date);
@@ -122,7 +126,7 @@ export function buildTimeline(jobs, workingDaysMode) {
     endDate = addCalendarDays(maxDate, PADDING_WD);
   }
 
-  return { startDate, endDate, dayWidth: DAY_WIDTH };
+  return { startDate, endDate, dayWidth: DAY_WIDTH, workingDaysMode };
 }
 
 // ---------------------------------------------------------------------------
@@ -233,7 +237,9 @@ function renderHeader(headerEl, tl) {
 
     // Day-of-week letter (bottom of header)
     const letter = document.createElement("span");
-    letter.className = isWeekend ? "gantt-day-letter weekend" : "gantt-day-letter";
+    letter.className = isWeekend
+      ? "gantt-day-letter weekend"
+      : "gantt-day-letter";
     letter.style.left = `${x}px`;
     letter.textContent = DAY_LETTERS[dow];
     headerEl.appendChild(letter);
@@ -250,6 +256,7 @@ function renderHeader(headerEl, tl) {
 
 /** Add light weekend-stripe divs behind bars so they're below stage bars. */
 function renderWeekendStripes(cell, tl) {
+  if (!tl.workingDaysMode) return; // stripes only relevant in working-days mode
   const cursor = new Date(tl.startDate);
   while (cursor <= tl.endDate) {
     const dow = cursor.getDay();
@@ -342,12 +349,12 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
     e.preventDefault();
     e.stopPropagation(); // prevent the row's HTML5 drag from firing
 
-    const isLeft  = e.target.classList.contains("left");
+    const isLeft = e.target.classList.contains("left");
     const isRight = e.target.classList.contains("right");
-    const isMove  = !isLeft && !isRight;
+    const isMove = !isLeft && !isRight;
 
-    const startX    = e.clientX;
-    const origLeft  = parseFloat(bar.style.left);
+    const startX = e.clientX;
+    const origLeft = parseFloat(bar.style.left);
     const origWidth = parseFloat(bar.style.width);
 
     // Left boundary: right edge of the nearest previous visible stage
@@ -356,7 +363,10 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
       const ps = job.stages[i];
       if (ps.status === "NotApplicable") continue;
       const pSpec = stageBarSpec(ps);
-      if (pSpec) { minLeft = dateToX(tl, pSpec.end); break; }
+      if (pSpec) {
+        minLeft = dateToX(tl, pSpec.end);
+        break;
+      }
     }
 
     bar.setPointerCapture(e.pointerId);
@@ -365,10 +375,10 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
     function onMove(me) {
       const dx = me.clientX - startX;
       if (isLeft) {
-        const newLeft  = Math.max(origLeft + dx, minLeft);
-        const newWidth = (origLeft + origWidth) - newLeft;
+        const newLeft = Math.max(origLeft + dx, minLeft);
+        const newWidth = origLeft + origWidth - newLeft;
         if (newWidth >= tl.dayWidth) {
-          bar.style.left  = newLeft + "px";
+          bar.style.left = newLeft + "px";
           bar.style.width = newWidth + "px";
         }
       } else if (isRight) {
@@ -383,25 +393,25 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
       bar.removeEventListener("pointermove", onMove);
       bar.classList.remove("dragging");
 
-      const finalLeft  = parseFloat(bar.style.left);
+      const finalLeft = parseFloat(bar.style.left);
       const finalWidth = parseFloat(bar.style.width);
 
       const newStart = xToDate(tl, finalLeft);
-      const newEnd   = xToDate(tl, finalLeft + finalWidth);
+      const newEnd = xToDate(tl, finalLeft + finalWidth);
 
       // Write back to the stage so export and recalculation see the changes
       if (isLeft || isMove) {
         if (spec.type === "actual" || spec.type === "inprog") {
-          stage.actualStart = formatDate(newStart);
+          stage.actualStart = formatStartDate(newStart);
         } else {
-          stage.plannedStart = formatDate(newStart);
+          stage.plannedStart = formatStartDate(newStart);
         }
       }
       if (isRight || isMove) {
         if (spec.type === "actual") {
-          stage.actualEnd = formatDate(newEnd);
+          stage.actualEnd = formatEndDate(newEnd);
         } else {
-          stage.plannedEnd = formatDate(newEnd);
+          stage.plannedEnd = formatEndDate(newEnd);
         }
       }
 

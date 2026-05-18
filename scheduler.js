@@ -8,7 +8,7 @@
  *   recalculateFromStage(job, stageIndex, workingDaysMode) → Job
  */
 
-import { addWorkingDays, nextWorkingDay } from "./dates.js";
+import { addWorkingDays, nextWorkingDay, workingDaysBetween } from "./dates.js";
 
 // ISO date string → local-midnight Date
 function parseDate(str) {
@@ -25,6 +25,10 @@ function formatDate(date) {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
+
+// Stage-start timestamps at 08:00, stage-end timestamps at 17:00
+function formatStartDate(date) { return formatDate(date) + " 08:00"; }
+function formatEndDate(date)   { return formatDate(date) + " 17:00"; }
 
 /**
  * Add `n` days to `date`, using either working-day or calendar-day arithmetic.
@@ -110,10 +114,22 @@ export function recalculateFromStage(job, stageIndex, workingDaysMode) {
       start = parseDate(stage.plannedStart) ?? new Date();
     }
 
-    const end = addDays(start, stage.defaultDurationDays, workingDaysMode);
+    // Preserve the currently allocated duration rather than the template default
+    const currentStart = parseDate(stage.plannedStart);
+    const currentEnd   = parseDate(stage.plannedEnd);
+    let durationDays;
+    if (currentStart && currentEnd) {
+      durationDays = workingDaysMode
+        ? workingDaysBetween(currentStart, currentEnd)
+        : Math.round((currentEnd - currentStart) / (24 * 60 * 60 * 1000));
+    } else {
+      durationDays = stage.defaultDurationDays;
+    }
 
-    stage.plannedStart = formatDate(start);
-    stage.plannedEnd = formatDate(end);
+    const end = addDays(start, durationDays, workingDaysMode);
+
+    stage.plannedStart = formatStartDate(start);
+    stage.plannedEnd   = formatEndDate(end);
     baseEnd = end;
   }
 
