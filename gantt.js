@@ -8,12 +8,12 @@
  *   renderTimeline(headerEl, rowsEl, jobs, workingDaysMode)
  */
 
-import { addWorkingDays, isWorkingDay, nextWorkingDay } from './dates.js';
+import { addWorkingDays, isWorkingDay, nextWorkingDay } from "./dates.js";
 
 // Pixels per calendar day — matches CSS --gantt-day-w
-const DAY_WIDTH   = 28;
+const DAY_WIDTH = 28;
 // Working-day padding added before the earliest date and after the latest
-const PADDING_WD  = 5;
+const PADDING_WD = 5;
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -22,15 +22,15 @@ const PADDING_WD  = 5;
 /** Parse "YYYY-MM-DD" or "YYYY-MM-DD HH:mm" → local-midnight Date, or null */
 function parseDate(str) {
   if (!str) return null;
-  const [y, m, d] = str.slice(0, 10).split('-').map(Number);
+  const [y, m, d] = str.slice(0, 10).split("-").map(Number);
   return new Date(y, m - 1, d);
 }
 
 /** Local-midnight Date → "YYYY-MM-DD" */
 function formatDate(date) {
-  const y  = date.getFullYear();
-  const m  = String(date.getMonth() + 1).padStart(2, '0');
-  const d  = String(date.getDate()).padStart(2, '0');
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
 
@@ -94,11 +94,11 @@ export function buildTimeline(jobs, workingDaysMode) {
     }
   }
 
-  // Fallback: if no dates found, use today ± 30 days
+  // Always include today so the current date is always visible
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  if (!minDate) minDate = subCalendarDays(today, 30);
-  if (!maxDate) maxDate = addCalendarDays(today, 30);
+  if (!minDate || today < minDate) minDate = new Date(today);
+  if (!maxDate || today > maxDate) maxDate = new Date(today);
 
   // Apply working-day padding
   let startDate, endDate;
@@ -119,7 +119,7 @@ export function buildTimeline(jobs, workingDaysMode) {
     endDate = nextOrSameWorkingDay(endDate);
   } else {
     startDate = subCalendarDays(minDate, PADDING_WD);
-    endDate   = addCalendarDays(maxDate, PADDING_WD);
+    endDate = addCalendarDays(maxDate, PADDING_WD);
   }
 
   return { startDate, endDate, dayWidth: DAY_WIDTH };
@@ -138,8 +138,8 @@ export function buildTimeline(jobs, workingDaysMode) {
  * @returns {number}
  */
 export function dateToX(timeline, date) {
-  const msPerDay  = 24 * 60 * 60 * 1000;
-  const calDays   = (date - timeline.startDate) / msPerDay;
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const calDays = (date - timeline.startDate) / msPerDay;
   return calDays * timeline.dayWidth;
 }
 
@@ -169,7 +169,7 @@ export function xToDate(timeline, x) {
  */
 export function renderTimeline(headerEl, rowsEl, jobs, workingDaysMode) {
   if (!jobs || jobs.length === 0) {
-    headerEl.innerHTML = '';
+    headerEl.innerHTML = "";
     return;
   }
 
@@ -178,8 +178,8 @@ export function renderTimeline(headerEl, rowsEl, jobs, workingDaysMode) {
   renderHeader(headerEl, tl);
 
   // Render stage bars into each .gantt-row cell
-  rowsEl.querySelectorAll('.gantt-row[data-job-key]').forEach(cell => {
-    const job = jobs.find(j => j.jobKey === cell.dataset.jobKey);
+  rowsEl.querySelectorAll(".gantt-row[data-job-key]").forEach((cell) => {
+    const job = jobs.find((j) => j.jobKey === cell.dataset.jobKey);
     if (job) renderJobBars(cell, job, tl);
   });
 }
@@ -189,12 +189,11 @@ export function renderTimeline(headerEl, rowsEl, jobs, workingDaysMode) {
 // ---------------------------------------------------------------------------
 
 function renderHeader(headerEl, tl) {
-  headerEl.innerHTML = '';
+  headerEl.innerHTML = "";
 
   const totalWidth = dateToX(tl, tl.endDate);
-  headerEl.style.position = 'relative';
-  headerEl.style.width    = `${totalWidth}px`;
-  headerEl.style.height   = '100%';
+  headerEl.style.position = "relative";
+  headerEl.style.width = `${totalWidth}px`;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -206,17 +205,17 @@ function renderHeader(headerEl, tl) {
 
     // Week label on Mondays
     if (cursor.getDay() === 1) {
-      const label = document.createElement('span');
-      label.className = 'gantt-week-label';
+      const label = document.createElement("span");
+      label.className = "gantt-week-label";
       label.style.left = `${x}px`;
       label.textContent = formatDate(cursor);
       headerEl.appendChild(label);
     }
 
     // Day tick
-    const tick = document.createElement('div');
+    const tick = document.createElement("div");
     const isToday = cursor.getTime() === today.getTime();
-    tick.className = isToday ? 'gantt-day-tick today' : 'gantt-day-tick';
+    tick.className = isToday ? "gantt-day-tick today" : "gantt-day-tick";
     tick.style.left = `${x}px`;
     headerEl.appendChild(tick);
 
@@ -237,48 +236,48 @@ function renderHeader(headerEl, tl) {
  */
 function stageBarSpec(stage) {
   const aStart = parseDate(stage.actualStart);
-  const aEnd   = parseDate(stage.actualEnd);
+  const aEnd = parseDate(stage.actualEnd);
   const pStart = parseDate(stage.plannedStart);
-  const pEnd   = parseDate(stage.plannedEnd);
+  const pEnd = parseDate(stage.plannedEnd);
 
   if (aStart && aEnd) {
-    return { start: aStart, end: aEnd, type: 'actual' };
+    return { start: aStart, end: aEnd, type: "actual" };
   }
   if (aStart) {
     // InProgress: starts at actual start, ends at planned end or fallback
     const end = pEnd ?? aStart;
-    return { start: aStart, end, type: 'inprog' };
+    return { start: aStart, end, type: "inprog" };
   }
   if (pStart && pEnd) {
-    return { start: pStart, end: pEnd, type: 'planned' };
+    return { start: pStart, end: pEnd, type: "planned" };
   }
   return null;
 }
 
 function renderJobBars(cell, job, tl) {
-  cell.innerHTML = '';
-  cell.style.position = 'relative';
-  cell.style.width    = `${dateToX(tl, tl.endDate)}px`;
+  cell.innerHTML = "";
+  cell.style.position = "relative";
+  cell.style.width = `${dateToX(tl, tl.endDate)}px`;
 
   for (const stage of job.stages) {
-    if (stage.status === 'NotApplicable') continue;
+    if (stage.status === "NotApplicable") continue;
 
     const spec = stageBarSpec(stage);
     if (!spec) continue;
 
-    const x     = dateToX(tl, spec.start);
+    const x = dateToX(tl, spec.start);
     const width = Math.max(dateToX(tl, spec.end) - x, tl.dayWidth); // min 1 day wide
 
-    const bar = document.createElement('div');
-    bar.className   = `stage-bar ${spec.type}`;
-    bar.style.left  = `${x}px`;
+    const bar = document.createElement("div");
+    bar.className = `stage-bar ${spec.type}`;
+    bar.style.left = `${x}px`;
     bar.style.width = `${width}px`;
-    bar.title       = `${stage.name}\n${formatDate(spec.start)} → ${formatDate(spec.end)}`;
+    bar.title = `${stage.name}\n${formatDate(spec.start)} → ${formatDate(spec.end)}`;
     bar.dataset.stageName = stage.name;
 
     // Resize handles
-    ['left', 'right'].forEach(side => {
-      const handle = document.createElement('div');
+    ["left", "right"].forEach((side) => {
+      const handle = document.createElement("div");
       handle.className = `resize-handle ${side}`;
       bar.appendChild(handle);
     });

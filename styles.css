@@ -220,6 +220,7 @@ body {
     position: sticky;
     top: var(--header-h);
     z-index: 50;
+    height: 44px;
     display: flex;
     background: var(--clr-surface);
     border-bottom: 2px solid var(--clr-border);
@@ -241,6 +242,7 @@ body {
     flex: 1;
     overflow: hidden;
     position: relative;
+    height: 100%;
 }
 
 .col {

@@ -11,17 +11,17 @@
 
 // Fields the app may update on each job
 const UPDATED_JOB_FIELDS = {
-  'Priority':     job => job.priority,
-  'Team Priority': job => job.teamPriority,
+  Priority: (job) => job.priority,
+  "Team Priority": (job) => job.teamPriority,
 };
 
 // Stage fields the app may update (mapped from the stage object)
 const UPDATED_STAGE_FIELDS = {
-  'Planned Start': stage => stage.plannedStart,
-  'Planned End':   stage => stage.plannedEnd,
-  'Actual Start':  stage => stage.actualStart,
-  'Actual End':    stage => stage.actualEnd,
-  'Status':        stage => stage.status,
+  "Planned Start": (stage) => stage.plannedStart,
+  "Planned End": (stage) => stage.plannedEnd,
+  "Actual Start": (stage) => stage.actualStart,
+  "Actual End": (stage) => stage.actualEnd,
+  Status: (stage) => stage.status,
 };
 
 /**
@@ -30,8 +30,8 @@ const UPDATED_STAGE_FIELDS = {
  * @returns {string}
  */
 function quoteField(value) {
-  const str = value == null ? '' : String(value);
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+  const str = value == null ? "" : String(value);
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
@@ -50,7 +50,7 @@ function buildRow(job) {
   // Apply updated job-level fields
   for (const [col, getter] of Object.entries(UPDATED_JOB_FIELDS)) {
     if (col in row) {
-      row[col] = getter(job) ?? '';
+      row[col] = getter(job) ?? "";
     }
   }
 
@@ -59,7 +59,7 @@ function buildRow(job) {
     for (const [suffix, getter] of Object.entries(UPDATED_STAGE_FIELDS)) {
       const col = `${stage.name} ${suffix}`;
       if (col in row) {
-        row[col] = getter(stage) ?? '';
+        row[col] = getter(stage) ?? "";
       }
     }
   }
@@ -75,11 +75,11 @@ function buildRow(job) {
  * @returns {string}
  */
 export function exportStageDates(jobs) {
-  if (!jobs || jobs.length === 0) return '';
+  if (!jobs || jobs.length === 0) return "";
 
   // Collect the full superset of columns, preserving order from each row
   const seenCols = new Set();
-  const allCols  = [];
+  const allCols = [];
   for (const job of jobs) {
     for (const col of Object.keys(job.originalCsvRow)) {
       if (!seenCols.has(col)) {
@@ -89,14 +89,14 @@ export function exportStageDates(jobs) {
     }
   }
 
-  const header = allCols.map(quoteField).join(',');
+  const header = allCols.map(quoteField).join(",");
 
-  const dataRows = jobs.map(job => {
+  const dataRows = jobs.map((job) => {
     const row = buildRow(job);
-    return allCols.map(col => quoteField(row[col] ?? '')).join(',');
+    return allCols.map((col) => quoteField(row[col] ?? "")).join(",");
   });
 
-  return [header, ...dataRows].join('\n');
+  return [header, ...dataRows].join("\n");
 }
 
 /**
@@ -105,9 +105,12 @@ export function exportStageDates(jobs) {
  * @param {string} filename
  */
 export function triggerDownload(csvText, filename) {
-  const blob = new Blob([csvText], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = Object.assign(document.createElement('a'), { href: url, download: filename });
+  const blob = new Blob([csvText], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement("a"), {
+    href: url,
+    download: filename,
+  });
   document.body.appendChild(a);
   a.click();
   a.remove();

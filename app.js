@@ -341,6 +341,7 @@ function wireRowDrag(row, job) {
   row.setAttribute('draggable', 'true');
 
   row.addEventListener('dragstart', e => {
+    if (!e.target.closest('.drag-handle')) { e.preventDefault(); return; }
     dragSrcKey = job.jobKey;
     row.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
