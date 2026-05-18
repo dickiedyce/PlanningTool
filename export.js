@@ -113,10 +113,3 @@ export function triggerDownload(csvText, filename) {
   a.remove();
   URL.revokeObjectURL(url);
 }
-    download: filename,
-  });
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
