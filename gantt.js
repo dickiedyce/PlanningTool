@@ -376,7 +376,6 @@ function renderJobBars(cell, job, tl, onUpdate) {
     bar.className = `stage-bar ${spec.type}`;
     bar.style.left = `${x}px`;
     bar.style.width = `${width}px`;
-    bar.title = `${stage.name}\n${formatDate(spec.start)} → ${formatDate(spec.end)}`;
     bar.dataset.stageName = stage.name;
 
     // Apply colour treatment by bar type
@@ -401,6 +400,24 @@ function renderJobBars(cell, job, tl, onUpdate) {
       bar.style.background = "transparent";
       if (stage.color) bar.style.borderColor = stage.color;
     }
+
+    // Stage name label (#31)
+    const label = document.createElement("span");
+    label.className = "bar-label";
+    label.textContent = stage.name;
+    bar.appendChild(label);
+
+    // Status badge
+    const badgeText = {
+      Complete: "Done", InProgress: "→", InReview: "⟳", Blocked: "!",
+    }[stage.status];
+    if (badgeText) {
+      const badge = document.createElement("span");
+      badge.className = "bar-badge";
+      badge.textContent = badgeText;
+      bar.appendChild(badge);
+    }
+
     ["left", "right"].forEach((side) => {
       const handle = document.createElement("div");
       handle.className = `resize-handle ${side}`;
@@ -409,24 +426,21 @@ function renderJobBars(cell, job, tl, onUpdate) {
 
     wireBarInteraction(bar, stage, spec, tl, job, idx, onUpdate);
 
-    // Hover tooltip (works on past bars too)
+    // Rich hover tooltip (#27)
     bar.addEventListener("mouseenter", (e) => {
       if (_isDragging) return;
-      const tt = getDragTooltip();
-      tt.textContent = `${stage.name}  ·  ${formatDate(spec.start)} → ${formatDate(spec.end)}`;
+      const tt = getBarTooltip();
+      tt.textContent = buildBarTooltip(stage, spec);
       tt.classList.remove("hidden");
-      tt.style.left = `${Math.min(e.clientX + 14, window.innerWidth - tt.offsetWidth - 8)}px`;
-      tt.style.top = `${e.clientY + 20}px`;
+      positionTooltip(tt, e);
     });
     bar.addEventListener("mousemove", (e) => {
       if (_isDragging) return;
-      const tt = getDragTooltip();
-      tt.style.left = `${Math.min(e.clientX + 14, window.innerWidth - tt.offsetWidth - 8)}px`;
-      tt.style.top = `${e.clientY + 20}px`;
+      positionTooltip(getBarTooltip(), e);
     });
     bar.addEventListener("mouseleave", () => {
       if (_isDragging) return;
-      getDragTooltip().classList.add("hidden");
+      getBarTooltip().classList.add("hidden");
     });
 
     cell.appendChild(bar);
@@ -454,6 +468,38 @@ function updateDragTooltip(tooltip, name, start, end, cx, cy) {
   tooltip.textContent = `${name}  ·  ${formatDate(start)} → ${formatDate(end)}`;
   tooltip.style.left = `${Math.min(cx + 14, window.innerWidth - tooltip.offsetWidth - 8)}px`;
   tooltip.style.top = `${cy + 20}px`;
+}
+
+// Singleton bar-hover tooltip (#27) — rich multi-line, distinct from the drag tooltip
+let _barTooltip = null;
+function getBarTooltip() {
+  if (!_barTooltip) {
+    _barTooltip = document.createElement("div");
+    _barTooltip.className = "info-tooltip hidden";
+    document.body.appendChild(_barTooltip);
+  }
+  return _barTooltip;
+}
+
+function positionTooltip(tt, e) {
+  tt.style.left = `${Math.min(e.clientX + 14, window.innerWidth - tt.offsetWidth - 8)}px`;
+  tt.style.top = `${e.clientY + 20}px`;
+}
+
+function buildBarTooltip(stage, spec) {
+  const aStart = stage.actualStart?.slice(0, 10);
+  const aEnd   = stage.actualEnd?.slice(0, 10);
+  const pStart = stage.plannedStart?.slice(0, 10);
+  const pEnd   = stage.plannedEnd?.slice(0, 10);
+  const lines = [
+    stage.name,
+    `Status:  ${stage.status || "—"}`,
+    `Actual:  ${aStart ? `${aStart} → ${aEnd || "in progress"}` : "none"}`,
+    `Planned: ${pStart ? `${pStart} → ${pEnd || "?"}` : "none"}`,
+  ];
+  if ((aStart || aEnd) && (pStart || pEnd))
+    lines.push("Source:  actual dates (planned overridden)");
+  return lines.join("\n");
 }
 
 function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
