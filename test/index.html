@@ -23,6 +23,8 @@
     // Import test modules sequentially so Mocha registers all suites before run()
     await import('./csv.test.js');
     await import('./dates.test.js');
+    await import('./scheduler.test.js');
+    await import('./export.test.js');
     mocha.run();
   </script>
 </body>
