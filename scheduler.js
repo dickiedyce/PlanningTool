@@ -106,16 +106,16 @@ export function recalculateFromStage(job, stageIndex, workingDaysMode) {
       continue;
     }
 
-    // Compute plannedStart
+    // Compute plannedStart — push only when the stage overlaps baseEnd; preserve gaps
+    const existingStart = parseDate(stage.plannedStart);
+    const earliest = baseEnd ? dayAfter(baseEnd, workingDaysMode) : null;
     let start;
-    if (i === stageIndex && stage.plannedStart) {
-      // Respect the caller-supplied plannedStart on the pivot stage
-      start = parseDate(stage.plannedStart);
-    } else if (baseEnd) {
-      start = dayAfter(baseEnd, workingDaysMode);
+    if (earliest && (!existingStart || existingStart < earliest)) {
+      // Stage overlaps the previous stage's end — push it forward
+      start = earliest;
     } else {
-      // No prior stage — fall back to existing plannedStart
-      start = parseDate(stage.plannedStart) ?? new Date();
+      // No overlap, or no base — preserve the existing start (fall back to now if none)
+      start = existingStart ?? new Date();
     }
 
     // Preserve the currently allocated duration rather than the template default

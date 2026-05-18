@@ -135,12 +135,46 @@ describe("recalculateFromStage() — working-days mode", () => {
   it("skips NotApplicable stages in the cascade chain", () => {
     const job = makeJob();
     job.stages[1].status = "NotApplicable";
-    // Stage[2] should still get dates derived from stage[0]'s end
     const result = recalculateFromStage(job, 0, true);
-    // stage[1] is skipped; stage[2] plannedStart = nextWD after stage[0].actualEnd
+    // stage[1] is skipped; baseEnd remains stage[0].actualEnd (May 5)
+    // stage[2] existingStart = May 18 > dayAfter(May 5) = May 6 → no push, gap preserved
     const ut = result.stages[2];
-    expect(ut.plannedStart).to.equal("2026-05-06 08:00");
-    expect(ut.plannedEnd).to.equal("2026-05-11 17:00"); // 2026-05-06 + 3 wd (current dur) = 2026-05-11 (Mon)
+    expect(ut.plannedStart).to.equal("2026-05-18 08:00");
+    expect(ut.plannedEnd).to.equal("2026-05-21 17:00");
+  });
+
+  it("pushes a stage forward when it overlaps the previous stage's end", () => {
+    const job = makeJob();
+    // stage[1] plannedStart = May 4 (Mon), before dayAfter(stage[0].actualEnd May 5) = May 6
+    job.stages[1].plannedStart = "2026-05-04";
+    job.stages[1].plannedEnd   = "2026-05-06"; // wdb(May4,May6) = 2 wd
+    const result = recalculateFromStage(job, 1, true);
+    // existingStart May 4 < earliest May 6 → pushed to May 6
+    const impl = result.stages[1];
+    expect(impl.plannedStart).to.equal("2026-05-06 08:00");
+    // end = addWorkingDays(May 6, 2) = May 8
+    expect(impl.plannedEnd).to.equal("2026-05-08 17:00");
+  });
+
+  it("cascades push through multiple overlapping stages", () => {
+    const job = makeJob();
+    // Simulate stage[0] extended to May 14 (Thu); recalculate from stage 1
+    job.stages[0].actualEnd = "2026-05-14";
+    const result = recalculateFromStage(job, 1, true);
+    // stage[1]: existingStart May 6 < dayAfter(May 14) = May 15 → pushed to May 15
+    //           wdb(May6,May15) = 7 wd; addWD(May15,7) = May 26
+    expect(result.stages[1].plannedStart).to.equal("2026-05-15 08:00");
+    // stage[2]: existingStart May 18 < dayAfter(May 26=Tue) = May 27 (Wed) → pushed to May 27
+    expect(result.stages[2].plannedStart).to.equal("2026-05-27 08:00");
+  });
+
+  it("preserves gap when a downstream stage does not overlap", () => {
+    const job = makeJob();
+    // stage[0] ends May 5; stage[1] May6→May15 (7wd); stage[2] May 18 (gap of 0wd after stage[1])
+    // No drag: recalculate from stage 1 with same dates — nothing should move
+    const result = recalculateFromStage(job, 1, true);
+    expect(result.stages[1].plannedStart).to.equal("2026-05-06 08:00");
+    expect(result.stages[2].plannedStart).to.equal("2026-05-18 08:00");
   });
 
   it("planned dates land on working days (never Saturday or Sunday)", () => {
@@ -167,10 +201,24 @@ describe("recalculateFromStage() — calendar-days mode", () => {
     expect(result.stages[1].plannedEnd).to.equal("2026-05-15 17:00");
   });
 
-  it("does not skip weekends when advancing to next stage", () => {
+  it("preserves a gap when the next stage does not overlap in calendar mode", () => {
     const job = makeJob();
     const result = recalculateFromStage(job, 1, false);
-    // Stage[2] starts day after stage[1] ends (2026-05-15 + 1 = 2026-05-16)
-    expect(result.stages[2].plannedStart).to.equal("2026-05-16 08:00");
+    // stage[1] ends May 15; stage[2] existingStart May 18 > dayAfter(May 15) = May 16 → preserved
+    expect(result.stages[2].plannedStart).to.equal("2026-05-18 08:00");
+  });
+
+  it("pushes overlapping stage without skipping weekends", () => {
+    const job = makeJob();
+    // Make stage[1] overlap stage[0]'s end (May 5)
+    job.stages[1].plannedStart = "2026-05-04";
+    job.stages[1].plannedEnd   = "2026-05-13"; // 9 calendar days
+    const result = recalculateFromStage(job, 1, false);
+    // dayAfter(May 5, calendar) = May 6 → stage[1] pushed to May 6
+    expect(result.stages[1].plannedStart).to.equal("2026-05-06 08:00");
+    // end = May 6 + 9 cal days = May 15
+    expect(result.stages[1].plannedEnd).to.equal("2026-05-15 17:00");
+    // stage[2] existingStart May 18 > dayAfter(May 15) = May 16 → preserved
+    expect(result.stages[2].plannedStart).to.equal("2026-05-18 08:00");
   });
 });
