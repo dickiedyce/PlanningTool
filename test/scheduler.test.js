@@ -141,7 +141,7 @@ describe("recalculateFromStage() — working-days mode", () => {
     // stage[1] is skipped; stage[2] plannedStart = nextWD after stage[0].actualEnd
     const ut = result.stages[2];
     expect(ut.plannedStart).to.equal("2026-05-06");
-    expect(ut.plannedEnd).to.equal('2026-05-12'); // 2026-05-06 + 4 wd = 2026-05-12 (Tue)
+    expect(ut.plannedEnd).to.equal("2026-05-12"); // 2026-05-06 + 4 wd = 2026-05-12 (Tue)
   });
 
   it("planned dates land on working days (never Saturday or Sunday)", () => {
