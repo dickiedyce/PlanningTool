@@ -534,12 +534,21 @@ function priorityOptions(selected) {
 // ---------------------------------------------------------------------------
 
 let dragSrcKey = null;
+// Set to true when a mousedown fires on a .drag-handle; cleared on dragend.
+// Needed because dragstart's e.target is always the draggable element (.job-row),
+// not the element under the cursor, so closest(".drag-handle") never matches.
+let _dragFromHandle = false;
 
 function wireRowDrag(row, job) {
   row.setAttribute("draggable", "true");
 
+  // mousedown fires before dragstart and has the correct e.target.
+  row.addEventListener("mousedown", (e) => {
+    _dragFromHandle = !!e.target.closest(".drag-handle");
+  });
+
   row.addEventListener("dragstart", (e) => {
-    if (!e.target.closest(".drag-handle")) {
+    if (!_dragFromHandle) {
       e.preventDefault();
       return;
     }
@@ -549,6 +558,7 @@ function wireRowDrag(row, job) {
   });
 
   row.addEventListener("dragend", () => {
+    _dragFromHandle = false;
     dragSrcKey = null;
     row.classList.remove("dragging");
     document
