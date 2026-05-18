@@ -6,7 +6,7 @@
  */
 
 import { parseTemplates, parseStageDates } from "./csv.js";
-import { renderTimeline } from "./gantt.js";
+import { renderTimeline, renderKey } from "./gantt.js";
 import { recalculateFromStage } from "./scheduler.js";
 import { exportStageDates, triggerDownload } from "./export.js";
 
@@ -74,6 +74,7 @@ function resolveElements() {
     workboard: document.getElementById("workboard"),
     jobRows: document.getElementById("job-rows"),
     ganttHeader: document.getElementById("gantt-header"),
+    stageKey: document.getElementById("stage-key"),
   };
 }
 
@@ -267,6 +268,7 @@ function wireExportButton() {
 function showWorkboard() {
   el.workboard.classList.remove("hidden");
   el.btnExport.disabled = false;
+  renderKey(el.stageKey, state.templates);
   renderWorkboard();
 }
 

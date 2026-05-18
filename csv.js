@@ -147,6 +147,7 @@ export function parseTemplates(text) {
       defaultOwner: r["Default Owner"] ?? "",
       active: true,
       defaultDurationDays: Number(r["Default Duration (Days)"]),
+      color: r["Color (Hex)"] ?? "",
     }))
     .sort((a, b) => a.sequence - b.sequence);
 }
@@ -214,6 +215,7 @@ export function parseStageDates(text, templates) {
       sequence: tmpl.sequence,
       owner: tmpl.defaultOwner,
       defaultDurationDays: tmpl.defaultDurationDays,
+      color: tmpl.color ?? "",
       status: row[`${tmpl.name} Status`] ?? "",
       actualStart: row[`${tmpl.name} Actual Start`] ?? "",
       actualEnd: row[`${tmpl.name} Actual End`] ?? "",

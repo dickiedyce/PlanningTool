@@ -326,7 +326,18 @@ function renderJobBars(cell, job, tl, onUpdate) {
     bar.title = `${stage.name}\n${formatDate(spec.start)} → ${formatDate(spec.end)}`;
     bar.dataset.stageName = stage.name;
 
-    // Resize handles
+    // Apply the template colour; vary alpha by status
+    if (stage.color) {
+      if (spec.type === "actual") {
+        bar.style.background = stage.color;
+      } else if (spec.type === "inprog") {
+        bar.style.background = stage.color + "BB"; // 73% opacity
+      } else {
+        // planned: light fill + coloured border
+        bar.style.background = stage.color + "44"; // 27% opacity
+        bar.style.borderColor = stage.color;
+      }
+    }
     ["left", "right"].forEach((side) => {
       const handle = document.createElement("div");
       handle.className = `resize-handle ${side}`;
@@ -421,5 +432,76 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
 
     bar.addEventListener("pointermove", onMove);
     bar.addEventListener("pointerup", onUp, { once: true });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Stage key
+// ---------------------------------------------------------------------------
+
+/**
+ * Render the stage key legend below the job rows.
+ * Each row shows a colour swatch, stage name, editable default duration, and
+ * a proportional sample bar. Editing the duration live-updates the template
+ * and the sample bar.
+ *
+ * @param {HTMLElement}        keyEl      The #stage-key element
+ * @param {Array<StageTemplate>} templates  Active templates from state
+ */
+export function renderKey(keyEl, templates) {
+  keyEl.innerHTML = "";
+
+  templates.forEach((tpl) => {
+    const row = document.createElement("div");
+    row.className = "key-row";
+
+    // Left info panel
+    const info = document.createElement("div");
+    info.className = "key-info";
+
+    const swatch = document.createElement("span");
+    swatch.className = "key-swatch";
+    swatch.style.background = tpl.color || "var(--clr-stage-planned)";
+    info.appendChild(swatch);
+
+    const name = document.createElement("span");
+    name.className = "key-name";
+    name.textContent = tpl.name;
+    info.appendChild(name);
+
+    const dur = document.createElement("input");
+    dur.type = "number";
+    dur.className = "key-duration";
+    dur.min = "1";
+    dur.value = String(tpl.defaultDurationDays);
+    info.appendChild(dur);
+
+    const lbl = document.createElement("span");
+    lbl.className = "key-days-label";
+    lbl.textContent = "days";
+    info.appendChild(lbl);
+
+    // Right: proportional sample bar
+    const ganttCell = document.createElement("div");
+    ganttCell.className = "key-gantt";
+
+    const bar = document.createElement("div");
+    bar.className = "key-bar";
+    bar.style.width = `${tpl.defaultDurationDays * DAY_WIDTH}px`;
+    bar.style.background = tpl.color || "var(--clr-stage-actual)";
+    bar.title = `${tpl.name} — ${tpl.defaultDurationDays} days default`;
+    ganttCell.appendChild(bar);
+
+    // Live-update template + bar width when duration is edited
+    dur.addEventListener("input", () => {
+      const v = Math.max(1, parseInt(dur.value, 10) || 1);
+      tpl.defaultDurationDays = v;
+      bar.style.width = `${v * DAY_WIDTH}px`;
+      bar.title = `${tpl.name} — ${v} days default`;
+    });
+
+    row.appendChild(info);
+    row.appendChild(ganttCell);
+    keyEl.appendChild(row);
   });
 }

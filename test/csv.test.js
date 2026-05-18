@@ -94,6 +94,7 @@ describe("parseTemplates()", () => {
       defaultOwner: "Architect",
       active: true,
       defaultDurationDays: 5,
+      color: "", // no Color (Hex) column in this fixture
     });
   });
 

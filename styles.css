@@ -499,3 +499,84 @@ select.priority-select {
 .stage-bar .resize-handle.right {
     right: 0;
 }
+
+/* ── Stage key legend ──────────────────────────────────────────────────── */
+
+.stage-key {
+    border-top: 2px solid var(--clr-border);
+    background: var(--clr-surface);
+    flex-shrink: 0;
+}
+
+.key-row {
+    display: flex;
+    height: var(--row-h);
+    border-bottom: 1px solid var(--clr-border);
+    align-items: stretch;
+}
+
+.key-info {
+    flex: 0 0 var(--col-jobs-w);
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: 0 .75rem;
+    border-right: 1px solid var(--clr-border);
+    overflow: hidden;
+}
+
+.key-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.key-name {
+    flex: 1;
+    font-size: .82rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--clr-text-muted);
+}
+
+.key-duration {
+    width: 44px;
+    border: 1px solid var(--clr-border);
+    border-radius: 3px;
+    text-align: center;
+    font: inherit;
+    font-size: .8rem;
+    padding: .1em .2em;
+    flex-shrink: 0;
+}
+
+.key-duration:focus {
+    outline: 2px solid var(--clr-primary);
+    border-color: transparent;
+}
+
+.key-days-label {
+    font-size: .75rem;
+    color: var(--clr-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.key-gantt {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.key-bar {
+    position: absolute;
+    top: 20%;
+    height: 60%;
+    border-radius: 3px;
+    left: 0;
+    opacity: .9;
+}
