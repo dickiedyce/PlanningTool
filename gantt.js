@@ -35,8 +35,12 @@ function formatDate(date) {
 }
 
 /** Stage-start timestamps at 08:00, stage-end timestamps at 17:00 */
-function formatStartDate(date) { return formatDate(date) + " 08:00"; }
-function formatEndDate(date)   { return formatDate(date) + " 17:00"; }
+function formatStartDate(date) {
+  return formatDate(date) + " 08:00";
+}
+function formatEndDate(date) {
+  return formatDate(date) + " 17:00";
+}
 
 /** Subtract n calendar days from date, returning a new Date */
 function subCalendarDays(date, n) {
@@ -357,6 +361,14 @@ function renderJobBars(cell, job, tl, onUpdate) {
  * Updates stage date fields on drop and calls onUpdate().
  */
 function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
+  // Bars whose end date is in the past are read-only
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (spec.end < today) {
+    bar.classList.add("bar-past");
+    return;
+  }
+
   bar.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
     e.preventDefault();

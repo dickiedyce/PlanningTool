@@ -17,6 +17,7 @@
         <div class="header-controls">
             <button id="btn-upload"  class="btn btn-primary">Upload files</button>
             <button id="btn-export"  class="btn" disabled>Export CSV</button>
+            <button id="btn-key"     class="btn" disabled>Key</button>
 
             <label class="toggle-label">
         <input type="checkbox" id="toggle-working-days" checked />
@@ -84,12 +85,14 @@
             <!-- Rendered by app.js / gantt.js -->
         </div>
 
-        <!-- Stage key legend -->
+    </main>
+
+    <!-- ── Stage key pop-over ───────────────────────────────────────────── -->
+    <div id="key-popover" class="key-popover hidden" role="dialog" aria-label="Stage key">
         <div id="stage-key" class="stage-key">
             <!-- Rendered by gantt.js renderKey -->
         </div>
-
-    </main>
+    </div>
 
     <script type="module" src="app.js"></script>
 </body>

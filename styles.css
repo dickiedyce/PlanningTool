@@ -500,12 +500,25 @@ select.priority-select {
     right: 0;
 }
 
+/* ── Stage key pop-over ───────────────────────────────────────────────── */
+
+.key-popover {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    z-index: 300;
+    background: var(--clr-surface);
+    border-bottom: 2px solid var(--clr-border);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
 /* ── Stage key legend ──────────────────────────────────────────────────── */
 
 .stage-key {
-    border-top: 2px solid var(--clr-border);
     background: var(--clr-surface);
-    flex-shrink: 0;
 }
 
 .key-row {
@@ -579,4 +592,15 @@ select.priority-select {
     border-radius: 3px;
     left: 0;
     opacity: .9;
+}
+
+/* ── Past (read-only) bars ──────────────────────────────────────────────── */
+
+.stage-bar.bar-past {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.stage-bar.bar-past .resize-handle {
+    display: none;
 }

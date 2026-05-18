@@ -75,6 +75,8 @@ function resolveElements() {
     jobRows: document.getElementById("job-rows"),
     ganttHeader: document.getElementById("gantt-header"),
     stageKey: document.getElementById("stage-key"),
+    btnKey: document.getElementById("btn-key"),
+    keyPopover: document.getElementById("key-popover"),
   };
 }
 
@@ -261,6 +263,29 @@ function wireExportButton() {
   });
 }
 
+function wireKeyPopover() {
+  el.btnKey.addEventListener("click", (e) => {
+    e.stopPropagation();
+    el.keyPopover.classList.toggle("hidden");
+  });
+
+  // Close when clicking anywhere outside the pop-over
+  document.addEventListener("click", (e) => {
+    if (
+      !el.keyPopover.classList.contains("hidden") &&
+      !el.keyPopover.contains(e.target) &&
+      e.target !== el.btnKey
+    ) {
+      el.keyPopover.classList.add("hidden");
+    }
+  });
+
+  // Close on Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") el.keyPopover.classList.add("hidden");
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Workboard rendering (skeletal — Gantt detail handled by gantt.js)
 // ---------------------------------------------------------------------------
@@ -268,6 +293,7 @@ function wireExportButton() {
 function showWorkboard() {
   el.workboard.classList.remove("hidden");
   el.btnExport.disabled = false;
+  el.btnKey.disabled = false;
   renderKey(el.stageKey, state.templates);
   renderWorkboard();
 }
@@ -456,6 +482,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wireWorkingDaysToggle();
   wireSortControls();
   wireExportButton();
+  wireKeyPopover();
 
   // Show the upload pop-over immediately on first load
   openUpload();
