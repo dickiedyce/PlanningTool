@@ -272,13 +272,30 @@ function showWorkboard() {
 
 function renderWorkboard() {
   renderJobRows(sortedJobs());
-  renderTimeline(el.ganttHeader, el.jobRows, state.jobs, state.workingDaysMode, onGanttUpdate);
+  renderTimeline(
+    el.ganttHeader,
+    el.jobRows,
+    state.jobs,
+    state.workingDaysMode,
+    onGanttUpdate,
+  );
 }
 
-function onGanttUpdate() {
+function onGanttUpdate(job, stageIndex) {
   state.dirty = true;
-  // Re-render bars only (rows already in DOM); also rebuilds the timeline tl
-  renderTimeline(el.ganttHeader, el.jobRows, state.jobs, state.workingDaysMode, onGanttUpdate);
+  // Cascade-recalculate all subsequent stages after the one that was dragged
+  if (job != null && stageIndex != null && stageIndex + 1 < job.stages.length) {
+    const updated = recalculateFromStage(job, stageIndex + 1, state.workingDaysMode);
+    job.stages = updated.stages; // update stages in-place on the state.jobs entry
+  }
+  // Re-render bars (rows already in DOM)
+  renderTimeline(
+    el.ganttHeader,
+    el.jobRows,
+    state.jobs,
+    state.workingDaysMode,
+    onGanttUpdate,
+  );
 }
 
 function renderJobRows(jobs) {

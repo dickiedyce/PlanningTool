@@ -399,11 +399,43 @@ select.priority-select {
 
 .gantt-week-label {
     position: absolute;
-    top: 0;
+    top: 2px;
     font-size: .7rem;
     color: var(--clr-text-muted);
     padding-left: 2px;
     white-space: nowrap;
+    pointer-events: none;
+}
+
+.gantt-day-letter {
+    position: absolute;
+    bottom: 2px;
+    width: var(--gantt-day-w);
+    text-align: center;
+    font-size: .6rem;
+    color: var(--clr-text-muted);
+    pointer-events: none;
+}
+
+.gantt-day-letter.weekend {
+    color: #c62828;
+    font-weight: 600;
+}
+
+.gantt-weekend-col {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: rgba(220, 0, 0, .07);
+    pointer-events: none;
+}
+
+.gantt-weekend-stripe {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: rgba(220, 0, 0, .04);
+    pointer-events: none;
 }
 
 .gantt-day-tick {
@@ -426,6 +458,7 @@ select.priority-select {
     border-radius: 3px;
     cursor: pointer;
     transition: filter .1s;
+    z-index: 1;
 }
 
 .stage-bar:hover {

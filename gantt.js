@@ -167,7 +167,13 @@ export function xToDate(timeline, x) {
  * @param {Array}       jobs
  * @param {boolean}     workingDaysMode
  */
-export function renderTimeline(headerEl, rowsEl, jobs, workingDaysMode, onUpdate) {
+export function renderTimeline(
+  headerEl,
+  rowsEl,
+  jobs,
+  workingDaysMode,
+  onUpdate,
+) {
   if (!jobs || jobs.length === 0) {
     headerEl.innerHTML = "";
     return;
@@ -188,6 +194,8 @@ export function renderTimeline(headerEl, rowsEl, jobs, workingDaysMode, onUpdate
 // Header rendering
 // ---------------------------------------------------------------------------
 
+const DAY_LETTERS = ["Su", "M", "T", "W", "Th", "F", "Sa"];
+
 function renderHeader(headerEl, tl) {
   headerEl.innerHTML = "";
 
@@ -198,13 +206,24 @@ function renderHeader(headerEl, tl) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Walk calendar days and render ticks + week labels
   const cursor = new Date(tl.startDate);
   while (cursor <= tl.endDate) {
     const x = dateToX(tl, cursor);
+    const dow = cursor.getDay();
+    const isWeekend = dow === 0 || dow === 6;
+    const isToday = cursor.getTime() === today.getTime();
 
-    // Week label on Mondays
-    if (cursor.getDay() === 1) {
+    // Weekend background column
+    if (isWeekend) {
+      const col = document.createElement("div");
+      col.className = "gantt-weekend-col";
+      col.style.left = `${x}px`;
+      col.style.width = `${tl.dayWidth}px`;
+      headerEl.appendChild(col);
+    }
+
+    // Week date label on Mondays (top of header)
+    if (dow === 1) {
       const label = document.createElement("span");
       label.className = "gantt-week-label";
       label.style.left = `${x}px`;
@@ -212,13 +231,35 @@ function renderHeader(headerEl, tl) {
       headerEl.appendChild(label);
     }
 
+    // Day-of-week letter (bottom of header)
+    const letter = document.createElement("span");
+    letter.className = isWeekend ? "gantt-day-letter weekend" : "gantt-day-letter";
+    letter.style.left = `${x}px`;
+    letter.textContent = DAY_LETTERS[dow];
+    headerEl.appendChild(letter);
+
     // Day tick
     const tick = document.createElement("div");
-    const isToday = cursor.getTime() === today.getTime();
     tick.className = isToday ? "gantt-day-tick today" : "gantt-day-tick";
     tick.style.left = `${x}px`;
     headerEl.appendChild(tick);
 
+    cursor.setDate(cursor.getDate() + 1);
+  }
+}
+
+/** Add light weekend-stripe divs behind bars so they're below stage bars. */
+function renderWeekendStripes(cell, tl) {
+  const cursor = new Date(tl.startDate);
+  while (cursor <= tl.endDate) {
+    const dow = cursor.getDay();
+    if (dow === 0 || dow === 6) {
+      const stripe = document.createElement("div");
+      stripe.className = "gantt-weekend-stripe";
+      stripe.style.left = `${dateToX(tl, cursor)}px`;
+      stripe.style.width = `${tl.dayWidth}px`;
+      cell.appendChild(stripe);
+    }
     cursor.setDate(cursor.getDate() + 1);
   }
 }
@@ -259,11 +300,14 @@ function renderJobBars(cell, job, tl, onUpdate) {
   cell.style.position = "relative";
   cell.style.width = `${dateToX(tl, tl.endDate)}px`;
 
-  for (const stage of job.stages) {
-    if (stage.status === "NotApplicable") continue;
+  // Weekend stripes first so they sit behind the bars
+  renderWeekendStripes(cell, tl);
+
+  job.stages.forEach((stage, idx) => {
+    if (stage.status === "NotApplicable") return;
 
     const spec = stageBarSpec(stage);
-    if (!spec) continue;
+    if (!spec) return;
 
     const x = dateToX(tl, spec.start);
     const width = Math.max(dateToX(tl, spec.end) - x, tl.dayWidth); // min 1 day wide
@@ -282,17 +326,17 @@ function renderJobBars(cell, job, tl, onUpdate) {
       bar.appendChild(handle);
     });
 
-    wireBarInteraction(bar, stage, spec, tl, onUpdate);
+    wireBarInteraction(bar, stage, spec, tl, job, idx, onUpdate);
 
     cell.appendChild(bar);
-  }
+  });
 }
 
 /**
  * Wire pointer-based drag (move) and resize interactions onto a stage bar.
  * Updates stage date fields on drop and calls onUpdate().
  */
-function wireBarInteraction(bar, stage, spec, tl, onUpdate) {
+function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
   bar.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
@@ -302,9 +346,18 @@ function wireBarInteraction(bar, stage, spec, tl, onUpdate) {
     const isRight = e.target.classList.contains("right");
     const isMove  = !isLeft && !isRight;
 
-    const startX   = e.clientX;
-    const origLeft = parseFloat(bar.style.left);
+    const startX    = e.clientX;
+    const origLeft  = parseFloat(bar.style.left);
     const origWidth = parseFloat(bar.style.width);
+
+    // Left boundary: right edge of the nearest previous visible stage
+    let minLeft = 0;
+    for (let i = stageIndex - 1; i >= 0; i--) {
+      const ps = job.stages[i];
+      if (ps.status === "NotApplicable") continue;
+      const pSpec = stageBarSpec(ps);
+      if (pSpec) { minLeft = dateToX(tl, pSpec.end); break; }
+    }
 
     bar.setPointerCapture(e.pointerId);
     bar.classList.add("dragging");
@@ -312,15 +365,17 @@ function wireBarInteraction(bar, stage, spec, tl, onUpdate) {
     function onMove(me) {
       const dx = me.clientX - startX;
       if (isLeft) {
-        const newWidth = origWidth - dx;
+        const newLeft  = Math.max(origLeft + dx, minLeft);
+        const newWidth = (origLeft + origWidth) - newLeft;
         if (newWidth >= tl.dayWidth) {
-          bar.style.left  = (origLeft + dx) + "px";
+          bar.style.left  = newLeft + "px";
           bar.style.width = newWidth + "px";
         }
       } else if (isRight) {
         bar.style.width = Math.max(origWidth + dx, tl.dayWidth) + "px";
       } else {
-        bar.style.left = (origLeft + dx) + "px";
+        // Move: clamp left edge so we can't overlap the previous stage
+        bar.style.left = Math.max(origLeft + dx, minLeft) + "px";
       }
     }
 
@@ -334,7 +389,7 @@ function wireBarInteraction(bar, stage, spec, tl, onUpdate) {
       const newStart = xToDate(tl, finalLeft);
       const newEnd   = xToDate(tl, finalLeft + finalWidth);
 
-      // Write back to the stage object so export picks up the changes
+      // Write back to the stage so export and recalculation see the changes
       if (isLeft || isMove) {
         if (spec.type === "actual" || spec.type === "inprog") {
           stage.actualStart = formatDate(newStart);
@@ -345,14 +400,13 @@ function wireBarInteraction(bar, stage, spec, tl, onUpdate) {
       if (isRight || isMove) {
         if (spec.type === "actual") {
           stage.actualEnd = formatDate(newEnd);
-        } else if (spec.type === "inprog") {
-          stage.plannedEnd = formatDate(newEnd);
         } else {
           stage.plannedEnd = formatDate(newEnd);
         }
       }
 
-      if (onUpdate) onUpdate();
+      // Pass job + index so the caller can cascade-recalculate later stages
+      if (onUpdate) onUpdate(job, stageIndex);
     }
 
     bar.addEventListener("pointermove", onMove);
