@@ -360,6 +360,24 @@ function renderJobBars(cell, job, tl, onUpdate) {
  * Wire pointer-based drag (move) and resize interactions onto a stage bar.
  * Updates stage date fields on drop and calls onUpdate().
  */
+
+// Singleton tooltip shown while dragging; created lazily once per page load
+let _dragTooltip = null;
+function getDragTooltip() {
+  if (!_dragTooltip) {
+    _dragTooltip = document.createElement("div");
+    _dragTooltip.className = "drag-tooltip hidden";
+    document.body.appendChild(_dragTooltip);
+  }
+  return _dragTooltip;
+}
+
+function updateDragTooltip(tooltip, name, start, end, cx, cy) {
+  tooltip.textContent = `${name}  ·  ${formatDate(start)} → ${formatDate(end)}`;
+  tooltip.style.left = `${Math.min(cx + 14, window.innerWidth - tooltip.offsetWidth - 8)}px`;
+  tooltip.style.top  = `${cy + 20}px`;
+}
+
 function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
   // Bars whose end date is in the past are read-only
   const today = new Date();
@@ -397,6 +415,15 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
     bar.setPointerCapture(e.pointerId);
     bar.classList.add("dragging");
 
+    // Show drag tooltip
+    const tooltip = getDragTooltip();
+    tooltip.classList.remove("hidden");
+    updateDragTooltip(
+      tooltip, stage.name,
+      xToDate(tl, origLeft), xToDate(tl, origLeft + origWidth),
+      e.clientX, e.clientY,
+    );
+
     function onMove(me) {
       const dx = me.clientX - startX;
       if (isLeft) {
@@ -412,11 +439,21 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
         // Move: clamp left edge so we can't overlap the previous stage
         bar.style.left = Math.max(origLeft + dx, minLeft) + "px";
       }
+
+      // Update tooltip with live dates
+      const curLeft  = parseFloat(bar.style.left);
+      const curWidth = parseFloat(bar.style.width);
+      updateDragTooltip(
+        tooltip, stage.name,
+        xToDate(tl, curLeft), xToDate(tl, curLeft + curWidth),
+        me.clientX, me.clientY,
+      );
     }
 
     function onUp() {
       bar.removeEventListener("pointermove", onMove);
       bar.classList.remove("dragging");
+      getDragTooltip().classList.add("hidden");
 
       const finalLeft = parseFloat(bar.style.left);
       const finalWidth = parseFloat(bar.style.width);
