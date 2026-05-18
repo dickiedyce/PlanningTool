@@ -453,6 +453,17 @@ select.priority-select {
     pointer-events: none;
 }
 
+.gantt-week-start {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #007AFF;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 1;
+}
+
 .gantt-day-tick {
     position: absolute;
     top: 0;

@@ -181,7 +181,9 @@ function wireUploadPopover() {
       e.preventDefault();
       dropEl.classList.add("drag-over");
     });
-    dropEl.addEventListener("dragleave", () => dropEl.classList.remove("drag-over"));
+    dropEl.addEventListener("dragleave", () =>
+      dropEl.classList.remove("drag-over"),
+    );
     dropEl.addEventListener("drop", (e) => {
       e.preventDefault();
       dropEl.classList.remove("drag-over");
@@ -190,8 +192,13 @@ function wireUploadPopover() {
     });
   }
 
-  wireSlot("templates", el.dropTemplates, el.fileInputTemplates, el.btnBrowseTemplates);
-  wireSlot("dates",     el.dropDates,     el.fileInputDates,     el.btnBrowseDates);
+  wireSlot(
+    "templates",
+    el.dropTemplates,
+    el.fileInputTemplates,
+    el.btnBrowseTemplates,
+  );
+  wireSlot("dates", el.dropDates, el.fileInputDates, el.btnBrowseDates);
 
   el.btnLoad.addEventListener("click", loadPlanner);
 
@@ -558,18 +565,23 @@ function wireRowDrag(row, job) {
     const srcJob = state.jobs.find((j) => j.jobKey === dragSrcKey);
     if (!srcJob) return;
 
-    // Move srcJob to just before the drop target
-    const arr = state.jobs.filter((j) => j.jobKey !== dragSrcKey);
+    // If a named sort is currently active, freeze the displayed order as
+    // the manual order before switching, so the drag result is predictable.
+    if (el.sortSelect.value !== "") {
+      sortedJobs().forEach((j, i) => { j.rowOrder = i; });
+      el.sortSelect.value = "";
+    }
+
+    // Reorder within the committed manual order
+    const ordered = [...state.jobs].sort((a, b) => a.rowOrder - b.rowOrder);
+    const arr = ordered.filter((j) => j.jobKey !== dragSrcKey);
     const tgtIdx = arr.findIndex((j) => j.jobKey === job.jobKey);
     arr.splice(tgtIdx, 0, srcJob);
 
-    arr.forEach((j, i) => {
-      j.rowOrder = i;
-    });
+    arr.forEach((j, i) => { j.rowOrder = i; });
     state.jobs = arr;
     state.dirty = true;
 
-    el.sortSelect.value = "";
     renderWorkboard();
   });
 }

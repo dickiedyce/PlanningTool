@@ -252,13 +252,18 @@ function renderHeader(headerEl, tl) {
       headerEl.appendChild(col);
     }
 
-    // Week date label on Mondays (top of header)
+    // Week date label + week-start marker on Mondays (top of header)
     if (dow === 1) {
       const label = document.createElement("span");
       label.className = "gantt-week-label";
       label.style.left = `${x}px`;
       label.textContent = formatDate(cursor);
       headerEl.appendChild(label);
+
+      const weekLine = document.createElement("div");
+      weekLine.className = "gantt-week-start";
+      weekLine.style.left = `${x}px`;
+      headerEl.appendChild(weekLine);
     }
 
     // Day-of-week letter (bottom of header) — hide Sa/Su in working-days mode
@@ -282,19 +287,30 @@ function renderHeader(headerEl, tl) {
   }
 }
 
-/** Add light weekend-stripe divs behind bars so they're below stage bars. */
+/** Add weekend-stripe divs and week-start marker lines behind bars. */
 function renderWeekendStripes(cell, tl) {
-  if (tl.workingDaysMode) return; // no stripes when weekends are collapsed
   const cursor = new Date(tl.startDate);
   while (cursor <= tl.endDate) {
     const dow = cursor.getDay();
-    if (dow === 0 || dow === 6) {
+    const x = dateToX(tl, cursor);
+
+    // Weekend stripes only in calendar mode
+    if (!tl.workingDaysMode && (dow === 0 || dow === 6)) {
       const stripe = document.createElement("div");
       stripe.className = "gantt-weekend-stripe";
-      stripe.style.left = `${dateToX(tl, cursor)}px`;
+      stripe.style.left = `${x}px`;
       stripe.style.width = `${tl.dayWidth}px`;
       cell.appendChild(stripe);
     }
+
+    // Week-start blue line on every Monday (always shown)
+    if (dow === 1) {
+      const line = document.createElement("div");
+      line.className = "gantt-week-start";
+      line.style.left = `${x}px`;
+      cell.appendChild(line);
+    }
+
     cursor.setDate(cursor.getDate() + 1);
   }
 }
