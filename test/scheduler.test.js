@@ -108,9 +108,9 @@ describe("recalculateFromStage() — working-days mode", () => {
     const ut = result.stages[2];
 
     expect(impl.plannedStart).to.equal("2026-05-06 08:00");
-    expect(impl.plannedEnd).to.equal("2026-05-15 17:00");   // 7 wd from Wed 6 = Fri 15
-    expect(ut.plannedStart).to.equal("2026-05-18 08:00");   // next wd after Fri 15 = Mon 18
-    expect(ut.plannedEnd).to.equal("2026-05-21 17:00");     // 3 wd from Mon 18 = Thu 21
+    expect(impl.plannedEnd).to.equal("2026-05-15 17:00"); // 7 wd from Wed 6 = Fri 15
+    expect(ut.plannedStart).to.equal("2026-05-18 08:00"); // next wd after Fri 15 = Mon 18
+    expect(ut.plannedEnd).to.equal("2026-05-21 17:00"); // 3 wd from Mon 18 = Thu 21
   });
 
   it("uses the actualEnd of a complete stage as the base for the next stage", () => {

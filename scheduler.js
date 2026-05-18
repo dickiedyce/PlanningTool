@@ -27,8 +27,12 @@ function formatDate(date) {
 }
 
 // Stage-start timestamps at 08:00, stage-end timestamps at 17:00
-function formatStartDate(date) { return formatDate(date) + " 08:00"; }
-function formatEndDate(date)   { return formatDate(date) + " 17:00"; }
+function formatStartDate(date) {
+  return formatDate(date) + " 08:00";
+}
+function formatEndDate(date) {
+  return formatDate(date) + " 17:00";
+}
 
 /**
  * Add `n` days to `date`, using either working-day or calendar-day arithmetic.
@@ -116,7 +120,7 @@ export function recalculateFromStage(job, stageIndex, workingDaysMode) {
 
     // Preserve the currently allocated duration rather than the template default
     const currentStart = parseDate(stage.plannedStart);
-    const currentEnd   = parseDate(stage.plannedEnd);
+    const currentEnd = parseDate(stage.plannedEnd);
     let durationDays;
     if (currentStart && currentEnd) {
       durationDays = workingDaysMode
@@ -129,7 +133,7 @@ export function recalculateFromStage(job, stageIndex, workingDaysMode) {
     const end = addDays(start, durationDays, workingDaysMode);
 
     stage.plannedStart = formatStartDate(start);
-    stage.plannedEnd   = formatEndDate(end);
+    stage.plannedEnd = formatEndDate(end);
     baseEnd = end;
   }
 
