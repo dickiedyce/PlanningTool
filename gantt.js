@@ -94,11 +94,11 @@ export function buildTimeline(jobs, workingDaysMode) {
     }
   }
 
-  // Always include today so the current date is always visible
+  // Always start from today; extend end to cover job dates
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  if (!minDate || today < minDate) minDate = new Date(today);
-  if (!maxDate || today > maxDate) maxDate = new Date(today);
+  minDate = new Date(today);
+  if (!maxDate || maxDate < today) maxDate = new Date(today);
 
   // Apply working-day padding
   let startDate, endDate;
