@@ -352,6 +352,26 @@ function renderJobBars(cell, job, tl, onUpdate) {
 
     wireBarInteraction(bar, stage, spec, tl, job, idx, onUpdate);
 
+    // Hover tooltip (works on past bars too)
+    bar.addEventListener("mouseenter", (e) => {
+      if (_isDragging) return;
+      const tt = getDragTooltip();
+      tt.textContent = `${stage.name}  ·  ${formatDate(spec.start)} → ${formatDate(spec.end)}`;
+      tt.classList.remove("hidden");
+      tt.style.left = `${Math.min(e.clientX + 14, window.innerWidth - tt.offsetWidth - 8)}px`;
+      tt.style.top  = `${e.clientY + 20}px`;
+    });
+    bar.addEventListener("mousemove", (e) => {
+      if (_isDragging) return;
+      const tt = getDragTooltip();
+      tt.style.left = `${Math.min(e.clientX + 14, window.innerWidth - tt.offsetWidth - 8)}px`;
+      tt.style.top  = `${e.clientY + 20}px`;
+    });
+    bar.addEventListener("mouseleave", () => {
+      if (_isDragging) return;
+      getDragTooltip().classList.add("hidden");
+    });
+
     cell.appendChild(bar);
   });
 }
@@ -361,8 +381,9 @@ function renderJobBars(cell, job, tl, onUpdate) {
  * Updates stage date fields on drop and calls onUpdate().
  */
 
-// Singleton tooltip shown while dragging; created lazily once per page load
+// Singleton tooltip shown while dragging or hovering; created lazily once per page load
 let _dragTooltip = null;
+let _isDragging = false;
 function getDragTooltip() {
   if (!_dragTooltip) {
     _dragTooltip = document.createElement("div");
@@ -414,6 +435,7 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
 
     bar.setPointerCapture(e.pointerId);
     bar.classList.add("dragging");
+    _isDragging = true;
 
     // Show drag tooltip
     const tooltip = getDragTooltip();
@@ -453,6 +475,7 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
     function onUp() {
       bar.removeEventListener("pointermove", onMove);
       bar.classList.remove("dragging");
+      _isDragging = false;
       getDragTooltip().classList.add("hidden");
 
       const finalLeft = parseFloat(bar.style.left);
