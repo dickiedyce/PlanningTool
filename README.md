@@ -4,7 +4,20 @@ Single-page vanilla JS workboard with Gantt timeline.
 
 ## Running
 
-Chrome requires ES modules to be served over HTTP (not `file://`).
+### Single-file (recommended for distribution)
+
+Build a self-contained `draftsman.html` that opens directly from the filesystem:
+
+```bash
+node build.js
+open draftsman.html
+```
+
+No server required. Distribute the generated `draftsman.html` file.
+
+### Development (with live source files)
+
+Chrome requires ES modules to be served over HTTP (not `file://`):
 
 ```bash
 python3 -m http.server 5173
