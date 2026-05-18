@@ -235,14 +235,16 @@ function renderHeader(headerEl, tl) {
       headerEl.appendChild(label);
     }
 
-    // Day-of-week letter (bottom of header)
-    const letter = document.createElement("span");
-    letter.className = isWeekend
-      ? "gantt-day-letter weekend"
-      : "gantt-day-letter";
-    letter.style.left = `${x}px`;
-    letter.textContent = DAY_LETTERS[dow];
-    headerEl.appendChild(letter);
+    // Day-of-week letter (bottom of header) — hide Sa/Su in working-days mode
+    if (!isWeekend || !tl.workingDaysMode) {
+      const letter = document.createElement("span");
+      letter.className = isWeekend
+        ? "gantt-day-letter weekend"
+        : "gantt-day-letter";
+      letter.style.left = `${x}px`;
+      letter.textContent = DAY_LETTERS[dow];
+      headerEl.appendChild(letter);
+    }
 
     // Day tick
     const tick = document.createElement("div");
