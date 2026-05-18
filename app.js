@@ -10,6 +10,7 @@ import { renderTimeline, renderKey } from "./gantt.js";
 import { recalculateFromStage } from "./scheduler.js";
 import { exportStageDates, triggerDownload } from "./export.js";
 import { addWorkingDays, nextWorkingDay } from "./dates.js";
+import { reorderJobs } from "./order.js";
 
 // ---------------------------------------------------------------------------
 // Application state
@@ -583,9 +584,7 @@ function wireRowDrag(row, job) {
 
     // Reorder within the committed manual order
     const ordered = [...state.jobs].sort((a, b) => a.rowOrder - b.rowOrder);
-    const arr = ordered.filter((j) => j.jobKey !== dragSrcKey);
-    const tgtIdx = arr.findIndex((j) => j.jobKey === job.jobKey);
-    arr.splice(tgtIdx, 0, srcJob);
+    const arr = reorderJobs(ordered, dragSrcKey, job.jobKey);
 
     arr.forEach((j, i) => {
       j.rowOrder = i;
