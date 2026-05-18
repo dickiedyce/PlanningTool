@@ -34,7 +34,10 @@
 
 body {
     background: var(--clr-bg);
-    min-height: 100vh;
+    height: 100vh;
+    /* fixed height so #workboard is constrained and can scroll */
+    overflow: hidden;
+    /* prevent page scroll; #workboard owns all scrolling */
     display: flex;
     flex-direction: column;
 }
@@ -249,7 +252,8 @@ body {
 
 .workboard-header {
     position: sticky;
-    top: 0; /* relative to #workboard scroll context, not the page */
+    top: 0;
+    /* relative to #workboard scroll context, not the page */
     z-index: 50;
     height: 44px;
     display: flex;
