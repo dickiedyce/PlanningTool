@@ -147,7 +147,7 @@ describe("recalculateFromStage() — working-days mode", () => {
     const job = makeJob();
     // stage[1] plannedStart = May 4 (Mon), before dayAfter(stage[0].actualEnd May 5) = May 6
     job.stages[1].plannedStart = "2026-05-04";
-    job.stages[1].plannedEnd   = "2026-05-06"; // wdb(May4,May6) = 2 wd
+    job.stages[1].plannedEnd = "2026-05-06"; // wdb(May4,May6) = 2 wd
     const result = recalculateFromStage(job, 1, true);
     // existingStart May 4 < earliest May 6 → pushed to May 6
     const impl = result.stages[1];
@@ -212,7 +212,7 @@ describe("recalculateFromStage() — calendar-days mode", () => {
     const job = makeJob();
     // Make stage[1] overlap stage[0]'s end (May 5)
     job.stages[1].plannedStart = "2026-05-04";
-    job.stages[1].plannedEnd   = "2026-05-13"; // 9 calendar days
+    job.stages[1].plannedEnd = "2026-05-13"; // 9 calendar days
     const result = recalculateFromStage(job, 1, false);
     // dayAfter(May 5, calendar) = May 6 → stage[1] pushed to May 6
     expect(result.stages[1].plannedStart).to.equal("2026-05-06 08:00");

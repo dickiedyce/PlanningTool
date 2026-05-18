@@ -232,11 +232,22 @@ describe("parseStageDates()", () => {
   it("excludes stages with an empty status (stage added after job)", () => {
     // CSV where Design Phase Status is empty — that stage should be ignored
     const header = [
-      "JobKey", "Job Name", "Client", "Initiative", "Priority", "Team Priority",
-      "Design Phase Status", "Design Phase Actual Start", "Design Phase Actual End",
-      "Design Phase Planned Start", "Design Phase Planned End",
-      "Deploy to PROD Status", "Deploy to PROD Actual Start", "Deploy to PROD Actual End",
-      "Deploy to PROD Planned Start", "Deploy to PROD Planned End",
+      "JobKey",
+      "Job Name",
+      "Client",
+      "Initiative",
+      "Priority",
+      "Team Priority",
+      "Design Phase Status",
+      "Design Phase Actual Start",
+      "Design Phase Actual End",
+      "Design Phase Planned Start",
+      "Design Phase Planned End",
+      "Deploy to PROD Status",
+      "Deploy to PROD Actual Start",
+      "Deploy to PROD Actual End",
+      "Deploy to PROD Planned Start",
+      "Deploy to PROD Planned End",
     ].join(",");
     const row = "1001,Test,Acme,Proj,High,High,,,,,,NotStarted,,,,";
     const [job] = parseStageDates(`${header}\n${row}`, templates);

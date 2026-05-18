@@ -710,17 +710,24 @@ select.priority-select {
     border-radius: 2px;
 }
 
-.swatch-actual  { background: #6b7280; }
-.swatch-inprog  { background: rgba(107, 114, 128, .35); }
+.swatch-actual {
+    background: #6b7280;
+}
+
+.swatch-inprog {
+    background: rgba(107, 114, 128, .35);
+}
+
 .swatch-planned {
     background: repeating-linear-gradient(45deg,
-        rgba(107,114,128,.08) 0 4px,
-        rgba(107,114,128,.22) 4px 8px);
+            rgba(107, 114, 128, .08) 0 4px,
+            rgba(107, 114, 128, .22) 4px 8px);
     border: 2px dashed #6b7280;
 }
+
 .swatch-blocked {
     background: repeating-linear-gradient(135deg,
-        #ff3b30 0 6px, #ff8a82 6px 12px);
+            #ff3b30 0 6px, #ff8a82 6px 12px);
     border: 2px solid #9f1239;
 }
 

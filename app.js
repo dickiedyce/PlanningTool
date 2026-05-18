@@ -311,9 +311,16 @@ function renderWorkboard() {
 }
 
 function onGanttUpdate(job, stageIndex) {
+  console.log(`[onGanttUpdate] stageIndex=${stageIndex} job="${job?.name}"`);
+  console.log(
+    `[onGanttUpdate] dragged stage: plannedStart=${job?.stages[stageIndex]?.plannedStart} plannedEnd=${job?.stages[stageIndex]?.plannedEnd}`,
+  );
   state.dirty = true;
   // Cascade-recalculate all subsequent stages after the one that was dragged
   if (job != null && stageIndex != null && stageIndex + 1 < job.stages.length) {
+    console.log(
+      `[onGanttUpdate] calling recalculateFromStage from stageIndex=${stageIndex + 1}`,
+    );
     const updated = recalculateFromStage(
       job,
       stageIndex + 1,

@@ -370,7 +370,11 @@ function renderJobBars(cell, job, tl, onUpdate) {
     if (!spec) return;
 
     const x = dateToX(tl, spec.start);
-    const width = Math.max(dateToX(tl, spec.end) - x, tl.dayWidth); // min 1 day wide
+    // +dayWidth: end is inclusive, so the bar extends through the end day
+    const width = Math.max(
+      dateToX(tl, spec.end) + tl.dayWidth - x,
+      tl.dayWidth,
+    );
 
     const bar = document.createElement("div");
     bar.className = `stage-bar ${spec.type}`;
@@ -409,7 +413,10 @@ function renderJobBars(cell, job, tl, onUpdate) {
 
     // Status badge
     const badgeText = {
-      Complete: "Done", InProgress: "→", InReview: "⟳", Blocked: "!",
+      Complete: "Done",
+      InProgress: "→",
+      InReview: "⟳",
+      Blocked: "!",
     }[stage.status];
     if (badgeText) {
       const badge = document.createElement("span");
@@ -488,17 +495,20 @@ function positionTooltip(tt, e) {
 
 function buildBarTooltip(stage, spec) {
   const aStart = stage.actualStart?.slice(0, 10);
-  const aEnd   = stage.actualEnd?.slice(0, 10);
+  const aEnd = stage.actualEnd?.slice(0, 10);
   const pStart = stage.plannedStart?.slice(0, 10);
-  const pEnd   = stage.plannedEnd?.slice(0, 10);
+  const pEnd = stage.plannedEnd?.slice(0, 10);
+  // end is inclusive: wdb counts exclusive of start, so +1 for display
+  const dur = workingDaysBetween(spec.start, spec.end) + 1;
   const lines = [
     stage.name,
-    `Status:  ${stage.status || "—"}`,
-    `Actual:  ${aStart ? `${aStart} → ${aEnd || "in progress"}` : "none"}`,
-    `Planned: ${pStart ? `${pStart} → ${pEnd || "?"}` : "none"}`,
+    `Status:   ${stage.status || "—"}`,
+    `Duration: ${dur} working day${dur === 1 ? "" : "s"}`,
+    `Actual:   ${aStart ? `${aStart} → ${aEnd || "in progress"}` : "none"}`,
+    `Planned:  ${pStart ? `${pStart} → ${pEnd || "?"}` : "none"}`,
   ];
   if ((aStart || aEnd) && (pStart || pEnd))
-    lines.push("Source:  actual dates (planned overridden)");
+    lines.push("Source:   actual dates (planned overridden)");
   return lines.join("\n");
 }
 
@@ -531,7 +541,8 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
       if (ps.status === "NotApplicable") continue;
       const pSpec = stageBarSpec(ps);
       if (pSpec) {
-        minLeft = dateToX(tl, pSpec.end);
+        // +dayWidth: right edge of previous bar (inclusive-end)
+        minLeft = dateToX(tl, pSpec.end) + tl.dayWidth;
         break;
       }
     }
@@ -591,7 +602,12 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
       const finalWidth = parseFloat(bar.style.width);
 
       const newStart = xToDate(tl, finalLeft);
-      const newEnd = xToDate(tl, finalLeft + finalWidth);
+      // Subtract one day-slot so the stored end is the LAST day the bar occupies
+      // (inclusive-end model: a 1-day bar has start === end)
+      const newEnd = xToDate(tl, finalLeft + finalWidth - tl.dayWidth);
+      console.log(
+        `[onUp] stage[${stageIndex}] "${stage.name}" newStart=${formatDate(newStart)} newEnd=${formatDate(newEnd)} isLeft=${isLeft} isRight=${isRight} isMove=${isMove}`,
+      );
 
       // If this was a phantom outline bar, the user is now giving it real dates
       if (spec.isOutline) {
@@ -615,6 +631,7 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
       }
 
       // Pass job + index so the caller can cascade-recalculate later stages
+      console.log(`[onUp] calling onUpdate with stageIndex=${stageIndex}`);
       if (onUpdate) onUpdate(job, stageIndex);
     }
 

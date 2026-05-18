@@ -80,6 +80,9 @@ function dayAfter(date, workingDaysMode) {
  * @returns {Object} New job object (original is not mutated)
  */
 export function recalculateFromStage(job, stageIndex, workingDaysMode) {
+  console.log(
+    `[recalc] START stageIndex=${stageIndex} workingDaysMode=${workingDaysMode}`,
+  );
   // Deep-clone stages so we don't mutate the original
   const stages = job.stages.map((s) => ({ ...s }));
 
@@ -90,6 +93,9 @@ export function recalculateFromStage(job, stageIndex, workingDaysMode) {
     const isComplete =
       prev.status === "Complete" && prev.actualStart && prev.actualEnd;
     baseEnd = parseDate(isComplete ? prev.actualEnd : prev.plannedEnd);
+    console.log(
+      `[recalc] baseEnd from stage[${stageIndex - 1}] "${prev.name}" = ${baseEnd?.toDateString()} (isComplete=${isComplete})`,
+    );
   }
 
   for (let i = stageIndex; i < stages.length; i++) {
@@ -109,13 +115,18 @@ export function recalculateFromStage(job, stageIndex, workingDaysMode) {
     // Compute plannedStart — push only when the stage overlaps baseEnd; preserve gaps
     const existingStart = parseDate(stage.plannedStart);
     const earliest = baseEnd ? dayAfter(baseEnd, workingDaysMode) : null;
+    console.log(
+      `[recalc] stage[${i}] "${stage.name}" existingStart=${existingStart?.toDateString()} earliest=${earliest?.toDateString()}`,
+    );
     let start;
-    if (earliest && (!existingStart || existingStart < earliest)) {
+    if (earliest && (!existingStart || existingStart <= baseEnd)) {
       // Stage overlaps the previous stage's end — push it forward
       start = earliest;
+      console.log(`[recalc] stage[${i}] PUSHED to ${start.toDateString()}`);
     } else {
       // No overlap, or no base — preserve the existing start (fall back to now if none)
       start = existingStart ?? new Date();
+      console.log(`[recalc] stage[${i}] PRESERVED at ${start.toDateString()}`);
     }
 
     // Preserve the currently allocated duration rather than the template default
@@ -131,6 +142,9 @@ export function recalculateFromStage(job, stageIndex, workingDaysMode) {
     }
 
     const end = addDays(start, durationDays, workingDaysMode);
+    console.log(
+      `[recalc] stage[${i}] "${stage.name}" duration=${durationDays} start=${start.toDateString()} end=${end.toDateString()}`,
+    );
 
     stage.plannedStart = formatStartDate(start);
     stage.plannedEnd = formatEndDate(end);
