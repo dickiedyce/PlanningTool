@@ -331,21 +331,25 @@ function stageBarSpec(stage) {
   const aEnd = parseDate(stage.actualEnd);
   const pStart = parseDate(stage.plannedStart);
   const pEnd = parseDate(stage.plannedEnd);
+  const isBlocked = stage.status === "Blocked";
 
   if (aStart && aEnd) {
-    return { start: aStart, end: aEnd, type: "actual" };
+    return { start: aStart, end: aEnd, type: isBlocked ? "blocked" : "actual" };
   }
   if (aStart) {
-    // InProgress: starts at actual start, ends at planned end or fallback
-    const end = pEnd ?? aStart;
-    return { start: aStart, end, type: "inprog" };
+    // In-progress: bar extends from actual start to today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = today > aStart ? today : aStart;
+    return { start: aStart, end, type: isBlocked ? "blocked" : "inprog" };
   }
   if (pStart && pEnd) {
+    const type = isBlocked ? "blocked" : "planned";
     return {
       start: pStart,
       end: pEnd,
-      type: "planned",
-      isOutline: !!stage.isOutline,
+      type,
+      isOutline: type === "planned" && !!stage.isOutline,
     };
   }
   return null;
@@ -375,18 +379,22 @@ function renderJobBars(cell, job, tl, onUpdate) {
     bar.title = `${stage.name}\n${formatDate(spec.start)} → ${formatDate(spec.end)}`;
     bar.dataset.stageName = stage.name;
 
-    // Apply the template colour; vary alpha by status
-    if (stage.color) {
-      if (spec.type === "actual") {
-        bar.style.background = stage.color;
-      } else if (spec.type === "inprog") {
-        bar.style.background = stage.color + "BB"; // 73% opacity
-      } else {
-        // planned: light fill + coloured border
-        bar.style.background = stage.color + "44"; // 27% opacity
+    // Apply colour treatment by bar type
+    if (spec.type === "actual") {
+      // Solid fill — actual recorded dates
+      if (stage.color) bar.style.background = stage.color;
+    } else if (spec.type === "inprog") {
+      // Light fill, no border — work in progress, bar extends to today
+      if (stage.color) bar.style.background = stage.color + "50"; // ~31% opacity
+    } else if (spec.type === "planned") {
+      // Diagonal cross-hatch + dashed border — planned dates only, no actuals
+      if (stage.color) {
+        bar.style.background = `repeating-linear-gradient(45deg, ${stage.color}20 0 4px, ${stage.color}40 4px 8px)`;
         bar.style.borderColor = stage.color;
       }
     }
+    // blocked type: CSS (.stage-bar.blocked) handles all styling
+
     // Outline bars override to transparent fill with dashed border
     if (spec.isOutline) {
       bar.classList.add("outline");

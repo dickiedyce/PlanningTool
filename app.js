@@ -568,7 +568,9 @@ function wireRowDrag(row, job) {
     // If a named sort is currently active, freeze the displayed order as
     // the manual order before switching, so the drag result is predictable.
     if (el.sortSelect.value !== "") {
-      sortedJobs().forEach((j, i) => { j.rowOrder = i; });
+      sortedJobs().forEach((j, i) => {
+        j.rowOrder = i;
+      });
       el.sortSelect.value = "";
     }
 
@@ -578,7 +580,9 @@ function wireRowDrag(row, job) {
     const tgtIdx = arr.findIndex((j) => j.jobKey === job.jobKey);
     arr.splice(tgtIdx, 0, srcJob);
 
-    arr.forEach((j, i) => { j.rowOrder = i; });
+    arr.forEach((j, i) => {
+      j.rowOrder = i;
+    });
     state.jobs = arr;
     state.dirty = true;
 

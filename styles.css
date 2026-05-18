@@ -496,17 +496,36 @@ select.priority-select {
     cursor: grabbing;
 }
 
+/* Solid fill — actual recorded dates */
 .stage-bar.actual {
     background: var(--clr-stage-actual);
 }
 
+/* Diagonal cross-hatch + dashed border — planned dates only */
 .stage-bar.planned {
-    background: var(--clr-stage-planned);
-    border: 1px solid var(--clr-primary);
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(156,163,175,.08) 0 4px,
+        rgba(156,163,175,.22) 4px 8px
+    );
+    border: 2px dashed var(--clr-stage-planned);
 }
 
+/* Light fill, no border — in progress, extends to today */
 .stage-bar.inprog {
     background: var(--clr-stage-inprog);
+    opacity: 0.45;
+}
+
+/* Diagonal red cross-hatch + solid border — blocked */
+.stage-bar.blocked {
+    background: repeating-linear-gradient(
+        135deg,
+        #ff3b30 0 6px,
+        #ff8a82 6px 12px
+    );
+    border: 2px solid #9f1239;
+    cursor: not-allowed;
 }
 
 /* Resize handles */
