@@ -228,12 +228,28 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    /* Single 2D scroll container: vertical scroll shows all job rows;
+       horizontal scroll reveals the full Gantt timeline (#45, #46) */
+    overflow: auto;
+}
+
+#workboard::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+#workboard::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, .2);
+    border-radius: 3px;
+}
+
+#workboard::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .workboard-header {
     position: sticky;
-    top: var(--header-h);
+    top: 0; /* relative to #workboard scroll context, not the page */
     z-index: 50;
     height: 44px;
     display: flex;
@@ -252,10 +268,19 @@ body {
     align-items: center;
     border-right: 1px solid var(--clr-border);
     overflow: hidden;
+    /* Sticky left panel: stays visible while the Gantt timeline scrolls
+       horizontally (#45). z-index 2 keeps it above stage bars (z-index 1). */
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--clr-surface);
 }
 
 .col-gantt {
-    flex: 1;
+    /* flex: none so the explicit pixel width set by gantt.js is respected,
+       causing the row to be wider than the viewport and enabling horizontal
+       scroll on #workboard (#45). */
+    flex: none;
     overflow: hidden;
     position: relative;
     height: 100%;
@@ -301,24 +326,8 @@ body {
 /* ── Job rows ──────────────────────────────────────────────────────────── */
 
 #job-rows {
-    flex: 1;
-    overflow-y: overlay;
-    /* Chrome: scrollbar floats over content, no layout shift */
-    overflow-x: hidden;
-}
-
-/* Thin overlay scrollbar so header and rows gantt areas stay aligned */
-#job-rows::-webkit-scrollbar {
-    width: 6px;
-}
-
-#job-rows::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, .2);
-    border-radius: 3px;
-}
-
-#job-rows::-webkit-scrollbar-track {
-    background: transparent;
+    /* Overflow is handled by the #workboard scroll container.
+       No own overflow or flex constraints needed. */
 }
 
 .job-row {
