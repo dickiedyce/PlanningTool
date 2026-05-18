@@ -210,19 +210,21 @@ export function parseStageDates(text, templates) {
   }
 
   return rows.map((row, idx) => {
-    const stages = templates.map((tmpl) => ({
-      name: tmpl.name,
-      sequence: tmpl.sequence,
-      owner: tmpl.defaultOwner,
-      defaultDurationDays: tmpl.defaultDurationDays,
-      color: tmpl.color ?? "",
-      isOutline: false,
-      status: row[`${tmpl.name} Status`] ?? "",
-      actualStart: row[`${tmpl.name} Actual Start`] ?? "",
-      actualEnd: row[`${tmpl.name} Actual End`] ?? "",
-      plannedStart: row[`${tmpl.name} Planned Start`] ?? "",
-      plannedEnd: row[`${tmpl.name} Planned End`] ?? "",
-    }));
+    const stages = templates
+      .filter((tmpl) => (row[`${tmpl.name} Status`] ?? "") !== "")
+      .map((tmpl) => ({
+        name: tmpl.name,
+        sequence: tmpl.sequence,
+        owner: tmpl.defaultOwner,
+        defaultDurationDays: tmpl.defaultDurationDays,
+        color: tmpl.color ?? "",
+        isOutline: false,
+        status: row[`${tmpl.name} Status`],
+        actualStart: row[`${tmpl.name} Actual Start`] ?? "",
+        actualEnd: row[`${tmpl.name} Actual End`] ?? "",
+        plannedStart: row[`${tmpl.name} Planned Start`] ?? "",
+        plannedEnd: row[`${tmpl.name} Planned End`] ?? "",
+      }));
 
     return {
       jobKey: row["JobKey"],

@@ -229,6 +229,21 @@ describe("parseStageDates()", () => {
     expect(dp.plannedEnd).to.equal("2026-01-05");
   });
 
+  it("excludes stages with an empty status (stage added after job)", () => {
+    // CSV where Design Phase Status is empty — that stage should be ignored
+    const header = [
+      "JobKey", "Job Name", "Client", "Initiative", "Priority", "Team Priority",
+      "Design Phase Status", "Design Phase Actual Start", "Design Phase Actual End",
+      "Design Phase Planned Start", "Design Phase Planned End",
+      "Deploy to PROD Status", "Deploy to PROD Actual Start", "Deploy to PROD Actual End",
+      "Deploy to PROD Planned Start", "Deploy to PROD Planned End",
+    ].join(",");
+    const row = "1001,Test,Acme,Proj,High,High,,,,,,NotStarted,,,,";
+    const [job] = parseStageDates(`${header}\n${row}`, templates);
+    expect(job.stages).to.have.lengthOf(1);
+    expect(job.stages[0].name).to.equal("Deploy to PROD");
+  });
+
   it("throws when a required stage column is missing", () => {
     // Build a CSV that is missing the "Deploy to PROD Status" column
     const header = [
