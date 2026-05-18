@@ -144,7 +144,7 @@ body {
     background: var(--clr-surface);
     border-radius: 8px;
     padding: 2rem;
-    width: min(520px, 95vw);
+    width: min(620px, 95vw);
     box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
     display: flex;
     flex-direction: column;
@@ -170,13 +170,14 @@ body {
 .drop-zone {
     border: 2px dashed var(--clr-border);
     border-radius: 6px;
-    padding: 2rem 1rem;
+    padding: 1.25rem .75rem;
     text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: .75rem;
     transition: border-color .15s, background .15s;
+    flex: 1;
 }
 
 .drop-zone.drag-over {
@@ -184,21 +185,35 @@ body {
     background: #e8f0fe;
 }
 
-.file-status {
-    list-style: none;
+.upload-slots {
+    display: flex;
+    gap: 1rem;
+}
+
+.upload-slot {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: .35rem;
-    font-size: .9rem;
+    gap: .5rem;
+}
+
+.slot-label {
+    font-weight: 600;
+    font-size: .875rem;
+    margin: 0;
+}
+
+.slot-status {
+    font-size: .8rem;
     color: var(--clr-text-muted);
+    margin: 0;
+    min-height: 1.1em;
+    word-break: break-all;
 }
 
-.file-status .loaded {
+.slot-status .loaded {
     color: #188038;
-}
-
-.file-status .error {
-    color: var(--clr-danger);
+    font-style: normal;
 }
 
 .upload-errors {

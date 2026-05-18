@@ -146,8 +146,10 @@ describe("dateToX()", () => {
     const tl = buildTimeline([makeJob("2026-06-10", "2026-06-20")], true);
     let friday = new Date(tl.startDate);
     while (friday.getDay() !== 5) friday.setDate(friday.getDate() + 1);
-    const saturday = new Date(friday); saturday.setDate(saturday.getDate() + 1);
-    const sunday   = new Date(friday); sunday.setDate(sunday.getDate()   + 2);
+    const saturday = new Date(friday);
+    saturday.setDate(saturday.getDate() + 1);
+    const sunday = new Date(friday);
+    sunday.setDate(sunday.getDate() + 2);
     expect(dateToX(tl, saturday)).to.equal(dateToX(tl, friday));
     expect(dateToX(tl, sunday)).to.equal(dateToX(tl, friday));
   });
@@ -156,7 +158,8 @@ describe("dateToX()", () => {
     const tl = buildTimeline([makeJob("2026-06-10", "2026-06-20")], true);
     let monday = new Date(tl.startDate);
     while (monday.getDay() !== 1) monday.setDate(monday.getDate() + 1);
-    const nextMonday = new Date(monday); nextMonday.setDate(nextMonday.getDate() + 7);
+    const nextMonday = new Date(monday);
+    nextMonday.setDate(nextMonday.getDate() + 7);
     const diff = dateToX(tl, nextMonday) - dateToX(tl, monday);
     expect(diff).to.equal(5 * tl.dayWidth);
   });

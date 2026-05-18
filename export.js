@@ -60,7 +60,10 @@ function buildRow(job) {
       const col = `${stage.name} ${suffix}`;
       if (col in row) {
         // Outline stages have phantom planned dates — never export them
-        if (stage.isOutline && (suffix === "Planned Start" || suffix === "Planned End")) {
+        if (
+          stage.isOutline &&
+          (suffix === "Planned Start" || suffix === "Planned End")
+        ) {
           row[col] = "";
         } else {
           row[col] = getter(stage) ?? "";

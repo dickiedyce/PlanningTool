@@ -8,7 +8,12 @@
  *   renderTimeline(headerEl, rowsEl, jobs, workingDaysMode)
  */
 
-import { addWorkingDays, isWorkingDay, nextWorkingDay, workingDaysBetween } from "./dates.js";
+import {
+  addWorkingDays,
+  isWorkingDay,
+  nextWorkingDay,
+  workingDaysBetween,
+} from "./dates.js";
 
 // Pixels per calendar day — matches CSS --gantt-day-w
 const DAY_WIDTH = 28;
@@ -320,7 +325,12 @@ function stageBarSpec(stage) {
     return { start: aStart, end, type: "inprog" };
   }
   if (pStart && pEnd) {
-    return { start: pStart, end: pEnd, type: "planned", isOutline: !!stage.isOutline };
+    return {
+      start: pStart,
+      end: pEnd,
+      type: "planned",
+      isOutline: !!stage.isOutline,
+    };
   }
   return null;
 }
@@ -364,7 +374,7 @@ function renderJobBars(cell, job, tl, onUpdate) {
     // Outline bars override to transparent fill with dashed border
     if (spec.isOutline) {
       bar.classList.add("outline");
-      bar.style.background  = "transparent";
+      bar.style.background = "transparent";
       if (stage.color) bar.style.borderColor = stage.color;
     }
     ["left", "right"].forEach((side) => {

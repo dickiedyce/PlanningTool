@@ -44,16 +44,27 @@
             <button class="close-btn" id="btn-close-upload" aria-label="Close">&times;</button>
             <h2>Upload CSV files</h2>
 
-            <div class="drop-zone" id="drop-zone" role="region" aria-label="Drop zone">
-                <p>Drag &amp; drop both CSV files here, or click to browse</p>
-                <input type="file" id="file-input" accept=".csv" multiple hidden />
-                <button class="btn" id="btn-browse">Browse files&hellip;</button>
-            </div>
+            <div class="upload-slots">
+                <div class="upload-slot">
+                    <p class="slot-label">Stage templates</p>
+                    <div class="drop-zone" id="drop-templates">
+                        <p>Drop here or</p>
+                        <input type="file" id="file-input-templates" accept=".csv" hidden />
+                        <button class="btn" id="btn-browse-templates">Browse&hellip;</button>
+                    </div>
+                    <p class="slot-status" id="status-templates"><em>not loaded</em></p>
+                </div>
 
-            <ul class="file-status" id="file-status">
-                <li id="status-templates">workboard_stage_templates.csv — <em>not loaded</em></li>
-                <li id="status-dates">workboard_stage_dates.csv — <em>not loaded</em></li>
-            </ul>
+                <div class="upload-slot">
+                    <p class="slot-label">Stage dates</p>
+                    <div class="drop-zone" id="drop-dates">
+                        <p>Drop here or</p>
+                        <input type="file" id="file-input-dates" accept=".csv" hidden />
+                        <button class="btn" id="btn-browse-dates">Browse&hellip;</button>
+                    </div>
+                    <p class="slot-status" id="status-dates"><em>not loaded</em></p>
+                </div>
+            </div>
 
             <div id="upload-errors" class="upload-errors" role="alert" aria-live="polite"></div>
 

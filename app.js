@@ -28,9 +28,6 @@ const state = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const TEMPLATES_FILENAME = "workboard_stage_templates.csv";
-const DATES_FILENAME = "workboard_stage_dates.csv";
-
 function readFileText(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -62,9 +59,12 @@ function resolveElements() {
     sortSelect: document.getElementById("sort-select"),
 
     overlay: document.getElementById("upload-overlay"),
-    dropZone: document.getElementById("drop-zone"),
-    fileInput: document.getElementById("file-input"),
-    btnBrowse: document.getElementById("btn-browse"),
+    dropTemplates: document.getElementById("drop-templates"),
+    dropDates: document.getElementById("drop-dates"),
+    fileInputTemplates: document.getElementById("file-input-templates"),
+    fileInputDates: document.getElementById("file-input-dates"),
+    btnBrowseTemplates: document.getElementById("btn-browse-templates"),
+    btnBrowseDates: document.getElementById("btn-browse-dates"),
     btnCloseUpload: document.getElementById("btn-close-upload"),
     btnLoad: document.getElementById("btn-load"),
 
@@ -106,38 +106,28 @@ function updateFileStatus() {
   const dt = state._rawDates;
 
   el.statusTemplates.innerHTML = tpl
-    ? `<strong>${TEMPLATES_FILENAME}</strong> — <span class="loaded">loaded</span>`
-    : `${TEMPLATES_FILENAME} — <em>not loaded</em>`;
+    ? `<span class="loaded">${tpl.name}</span>`
+    : `<em>not loaded</em>`;
 
   el.statusDates.innerHTML = dt
-    ? `<strong>${DATES_FILENAME}</strong> — <span class="loaded">loaded</span>`
-    : `${DATES_FILENAME} — <em>not loaded</em>`;
+    ? `<span class="loaded">${dt.name}</span>`
+    : `<em>not loaded</em>`;
 
   el.btnLoad.disabled = !(tpl && dt);
 }
 
-function classifyFile(file) {
+function acceptFile(slot, file) {
   if (!isCSVFile(file)) {
     setUploadError(`"${file.name}" is not a CSV file.`);
     return;
   }
-  const name = file.name.toLowerCase();
-  if (name === TEMPLATES_FILENAME) {
-    state._rawTemplates = file;
-  } else if (name === DATES_FILENAME) {
-    state._rawDates = file;
-  } else {
-    setUploadError(
-      `Unrecognised file: "${file.name}". Expected "${TEMPLATES_FILENAME}" or "${DATES_FILENAME}".`,
-    );
-    return;
-  }
   clearUploadError();
+  if (slot === "templates") {
+    state._rawTemplates = file;
+  } else {
+    state._rawDates = file;
+  }
   updateFileStatus();
-}
-
-function handleDroppedFiles(files) {
-  for (const file of files) classifyFile(file);
 }
 
 async function loadPlanner() {
@@ -180,28 +170,28 @@ function wireUploadPopover() {
       closeUpload();
   });
 
-  // File input via Browse button
-  el.btnBrowse.addEventListener("click", () => el.fileInput.click());
-  el.fileInput.addEventListener("change", () => {
-    handleDroppedFiles(el.fileInput.files);
-    el.fileInput.value = ""; // reset so same file can be re-selected
-  });
+  // Wire each slot independently
+  function wireSlot(slot, dropEl, inputEl, browseBtn) {
+    browseBtn.addEventListener("click", () => inputEl.click());
+    inputEl.addEventListener("change", () => {
+      if (inputEl.files[0]) acceptFile(slot, inputEl.files[0]);
+      inputEl.value = "";
+    });
+    dropEl.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropEl.classList.add("drag-over");
+    });
+    dropEl.addEventListener("dragleave", () => dropEl.classList.remove("drag-over"));
+    dropEl.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropEl.classList.remove("drag-over");
+      const file = e.dataTransfer.files[0];
+      if (file) acceptFile(slot, file);
+    });
+  }
 
-  // Drag and drop
-  el.dropZone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    el.dropZone.classList.add("drag-over");
-  });
-
-  el.dropZone.addEventListener("dragleave", () => {
-    el.dropZone.classList.remove("drag-over");
-  });
-
-  el.dropZone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    el.dropZone.classList.remove("drag-over");
-    handleDroppedFiles(e.dataTransfer.files);
-  });
+  wireSlot("templates", el.dropTemplates, el.fileInputTemplates, el.btnBrowseTemplates);
+  wireSlot("dates",     el.dropDates,     el.fileInputDates,     el.btnBrowseDates);
 
   el.btnLoad.addEventListener("click", loadPlanner);
 
@@ -430,8 +420,8 @@ function fillOutlineSchedule(job) {
     const dur = stage.defaultDurationDays ?? 5;
     const end = addWorkingDays(cursor, dur);
     stage.plannedStart = fmtOutlineStart(cursor);
-    stage.plannedEnd   = fmtOutlineEnd(end);
-    stage.isOutline    = true;
+    stage.plannedEnd = fmtOutlineEnd(end);
+    stage.isOutline = true;
     cursor = nextWorkingDay(end);
   }
 }
@@ -452,16 +442,16 @@ function getInfoTooltip() {
 
 function jobDateSummary(job) {
   const planned = { start: null, end: null };
-  const actual  = { start: null, end: null };
+  const actual = { start: null, end: null };
   for (const stage of job.stages) {
     const ps = stage.plannedStart?.slice(0, 10);
     const pe = stage.plannedEnd?.slice(0, 10);
     const as = stage.actualStart?.slice(0, 10);
     const ae = stage.actualEnd?.slice(0, 10);
     if (ps && (!planned.start || ps < planned.start)) planned.start = ps;
-    if (pe && (!planned.end   || pe > planned.end))   planned.end   = pe;
-    if (as && (!actual.start  || as < actual.start))  actual.start  = as;
-    if (ae && (!actual.end    || ae > actual.end))     actual.end    = ae;
+    if (pe && (!planned.end || pe > planned.end)) planned.end = pe;
+    if (as && (!actual.start || as < actual.start)) actual.start = as;
+    if (ae && (!actual.end || ae > actual.end)) actual.end = ae;
   }
   return { planned, actual };
 }
@@ -471,14 +461,16 @@ function wireInfoTooltip(cell, job) {
     const { planned, actual } = jobDateSummary(job);
     const lines = [
       `${job.jobKey}  —  ${job.jobName}`,
-      `Client:     ${job.client      || "—"}`,
-      `Initiative: ${job.initiative  || "—"}`,
-      `Priority:   ${job.priority    || "—"}   Team: ${job.teamPriority || "—"}`,
+      `Client:     ${job.client || "—"}`,
+      `Initiative: ${job.initiative || "—"}`,
+      `Priority:   ${job.priority || "—"}   Team: ${job.teamPriority || "—"}`,
     ];
     if (planned.start || planned.end)
       lines.push(`Planned: ${planned.start || "?"} → ${planned.end || "?"}`);
     if (actual.start || actual.end)
-      lines.push(`Actual:  ${actual.start  || "?"} → ${actual.end  || "in progress"}`);
+      lines.push(
+        `Actual:  ${actual.start || "?"} → ${actual.end || "in progress"}`,
+      );
     const tt = getInfoTooltip();
     tt.textContent = lines.join("\n");
     tt.classList.remove("hidden");
@@ -490,11 +482,13 @@ function wireInfoTooltip(cell, job) {
   }
   function position(tt, e) {
     tt.style.left = `${Math.min(e.clientX + 14, window.innerWidth - tt.offsetWidth - 8)}px`;
-    tt.style.top  = `${e.clientY + 20}px`;
+    tt.style.top = `${e.clientY + 20}px`;
   }
   cell.addEventListener("mouseenter", show);
-  cell.addEventListener("mousemove",  move);
-  cell.addEventListener("mouseleave", () => getInfoTooltip().classList.add("hidden"));
+  cell.addEventListener("mousemove", move);
+  cell.addEventListener("mouseleave", () =>
+    getInfoTooltip().classList.add("hidden"),
+  );
 }
 
 /** Escape HTML entities to prevent XSS from CSV data */
