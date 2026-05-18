@@ -272,7 +272,13 @@ function showWorkboard() {
 
 function renderWorkboard() {
   renderJobRows(sortedJobs());
-  renderTimeline(el.ganttHeader, el.jobRows, state.jobs, state.workingDaysMode);
+  renderTimeline(el.ganttHeader, el.jobRows, state.jobs, state.workingDaysMode, onGanttUpdate);
+}
+
+function onGanttUpdate() {
+  state.dirty = true;
+  // Re-render bars only (rows already in DOM); also rebuilds the timeline tl
+  renderTimeline(el.ganttHeader, el.jobRows, state.jobs, state.workingDaysMode, onGanttUpdate);
 }
 
 function renderJobRows(jobs) {
@@ -334,12 +340,15 @@ function esc(str) {
 
 function priorityOptions(selected) {
   return [
-    { v: "High",   l: "H" },
+    { v: "High", l: "H" },
     { v: "Medium", l: "M" },
-    { v: "Low",    l: "L" },
-    { v: "",       l: "—" },
+    { v: "Low", l: "L" },
+    { v: "", l: "—" },
   ]
-    .map(({ v, l }) => `<option value="${v}"${v === selected ? " selected" : ""}>${l}</option>`)
+    .map(
+      ({ v, l }) =>
+        `<option value="${v}"${v === selected ? " selected" : ""}>${l}</option>`,
+    )
     .join("");
 }
 

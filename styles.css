@@ -379,7 +379,8 @@ select.priority-select {
     cursor: pointer;
     padding: 0;
     text-align: center;
-    -webkit-appearance: none; /* hide native chevron; single letter fits without it */
+    -webkit-appearance: none;
+    /* hide native chevron; single letter fits without it */
 }
 
 /* ── Gantt area ────────────────────────────────────────────────────────── */
@@ -429,6 +430,11 @@ select.priority-select {
 
 .stage-bar:hover {
     filter: brightness(.9);
+}
+
+.stage-bar.dragging {
+    opacity: .75;
+    cursor: grabbing;
 }
 
 .stage-bar.actual {

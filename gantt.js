@@ -167,7 +167,7 @@ export function xToDate(timeline, x) {
  * @param {Array}       jobs
  * @param {boolean}     workingDaysMode
  */
-export function renderTimeline(headerEl, rowsEl, jobs, workingDaysMode) {
+export function renderTimeline(headerEl, rowsEl, jobs, workingDaysMode, onUpdate) {
   if (!jobs || jobs.length === 0) {
     headerEl.innerHTML = "";
     return;
@@ -180,7 +180,7 @@ export function renderTimeline(headerEl, rowsEl, jobs, workingDaysMode) {
   // Render stage bars into each .gantt-row cell
   rowsEl.querySelectorAll(".gantt-row[data-job-key]").forEach((cell) => {
     const job = jobs.find((j) => j.jobKey === cell.dataset.jobKey);
-    if (job) renderJobBars(cell, job, tl);
+    if (job) renderJobBars(cell, job, tl, onUpdate);
   });
 }
 
@@ -254,7 +254,7 @@ function stageBarSpec(stage) {
   return null;
 }
 
-function renderJobBars(cell, job, tl) {
+function renderJobBars(cell, job, tl, onUpdate) {
   cell.innerHTML = "";
   cell.style.position = "relative";
   cell.style.width = `${dateToX(tl, tl.endDate)}px`;
@@ -282,6 +282,80 @@ function renderJobBars(cell, job, tl) {
       bar.appendChild(handle);
     });
 
+    wireBarInteraction(bar, stage, spec, tl, onUpdate);
+
     cell.appendChild(bar);
   }
+}
+
+/**
+ * Wire pointer-based drag (move) and resize interactions onto a stage bar.
+ * Updates stage date fields on drop and calls onUpdate().
+ */
+function wireBarInteraction(bar, stage, spec, tl, onUpdate) {
+  bar.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation(); // prevent the row's HTML5 drag from firing
+
+    const isLeft  = e.target.classList.contains("left");
+    const isRight = e.target.classList.contains("right");
+    const isMove  = !isLeft && !isRight;
+
+    const startX   = e.clientX;
+    const origLeft = parseFloat(bar.style.left);
+    const origWidth = parseFloat(bar.style.width);
+
+    bar.setPointerCapture(e.pointerId);
+    bar.classList.add("dragging");
+
+    function onMove(me) {
+      const dx = me.clientX - startX;
+      if (isLeft) {
+        const newWidth = origWidth - dx;
+        if (newWidth >= tl.dayWidth) {
+          bar.style.left  = (origLeft + dx) + "px";
+          bar.style.width = newWidth + "px";
+        }
+      } else if (isRight) {
+        bar.style.width = Math.max(origWidth + dx, tl.dayWidth) + "px";
+      } else {
+        bar.style.left = (origLeft + dx) + "px";
+      }
+    }
+
+    function onUp() {
+      bar.removeEventListener("pointermove", onMove);
+      bar.classList.remove("dragging");
+
+      const finalLeft  = parseFloat(bar.style.left);
+      const finalWidth = parseFloat(bar.style.width);
+
+      const newStart = xToDate(tl, finalLeft);
+      const newEnd   = xToDate(tl, finalLeft + finalWidth);
+
+      // Write back to the stage object so export picks up the changes
+      if (isLeft || isMove) {
+        if (spec.type === "actual" || spec.type === "inprog") {
+          stage.actualStart = formatDate(newStart);
+        } else {
+          stage.plannedStart = formatDate(newStart);
+        }
+      }
+      if (isRight || isMove) {
+        if (spec.type === "actual") {
+          stage.actualEnd = formatDate(newEnd);
+        } else if (spec.type === "inprog") {
+          stage.plannedEnd = formatDate(newEnd);
+        } else {
+          stage.plannedEnd = formatDate(newEnd);
+        }
+      }
+
+      if (onUpdate) onUpdate();
+    }
+
+    bar.addEventListener("pointermove", onMove);
+    bar.addEventListener("pointerup", onUp, { once: true });
+  });
 }
