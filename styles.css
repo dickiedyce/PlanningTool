@@ -236,6 +236,7 @@ body {
     display: flex;
     align-items: center;
     border-right: 1px solid var(--clr-border);
+    overflow: hidden;
 }
 
 .col-gantt {
@@ -257,23 +258,25 @@ body {
 }
 
 .col-priority {
-    flex: 0 0 76px;
+    flex: 0 0 36px;
+    text-align: center;
 }
 
 .col-team-priority {
-    flex: 0 0 76px;
+    flex: 0 0 36px;
+    text-align: center;
 }
 
 .col-client {
-    flex: 1 1 80px;
+    flex: 1 1 70px;
 }
 
 .col-initiative {
-    flex: 1 1 80px;
+    flex: 1 1 70px;
 }
 
 .col-job-name {
-    flex: 2 1 120px;
+    flex: 3 1 100px;
 }
 
 .col-job-key {
@@ -284,14 +287,24 @@ body {
 
 #job-rows {
     flex: 1;
-    overflow-y: overlay; /* Chrome: scrollbar floats over content, no layout shift */
+    overflow-y: overlay;
+    /* Chrome: scrollbar floats over content, no layout shift */
     overflow-x: hidden;
 }
 
 /* Thin overlay scrollbar so header and rows gantt areas stay aligned */
-#job-rows::-webkit-scrollbar { width: 6px; }
-#job-rows::-webkit-scrollbar-thumb { background: rgba(0,0,0,.2); border-radius: 3px; }
-#job-rows::-webkit-scrollbar-track { background: transparent; }
+#job-rows::-webkit-scrollbar {
+    width: 6px;
+}
+
+#job-rows::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, .2);
+    border-radius: 3px;
+}
+
+#job-rows::-webkit-scrollbar-track {
+    background: transparent;
+}
 
 .job-row {
     display: flex;
@@ -364,7 +377,9 @@ select.priority-select {
     background: transparent;
     font: inherit;
     cursor: pointer;
-    padding: 0 .25em;
+    padding: 0;
+    text-align: center;
+    -webkit-appearance: none; /* hide native chevron; single letter fits without it */
 }
 
 /* ── Gantt area ────────────────────────────────────────────────────────── */
