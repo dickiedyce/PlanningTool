@@ -1,0 +1,440 @@
+/* ── Reset & base ──────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --clr-bg: #f5f6f8;
+    --clr-surface: #ffffff;
+    --clr-border: #d0d4da;
+    --clr-primary: #1a73e8;
+    --clr-primary-dark: #1558b0;
+    --clr-text: #202124;
+    --clr-text-muted: #5f6368;
+    --clr-danger: #d93025;
+
+    --clr-stage-actual: #1a73e8;
+    --clr-stage-planned: #a8c7fa;
+    --clr-stage-inprog: #fbbc04;
+
+    --header-h: 52px;
+    --col-jobs-w: 480px;
+    --row-h: 40px;
+    --gantt-day-w: 28px;
+
+    font-family: "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    color: var(--clr-text);
+}
+
+body {
+    background: var(--clr-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Utility ───────────────────────────────────────────────────────────── */
+
+.hidden {
+    display: none !important;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .35em;
+    padding: .4em 1em;
+    border: 1px solid var(--clr-border);
+    border-radius: 4px;
+    background: var(--clr-surface);
+    color: var(--clr-text);
+    cursor: pointer;
+    font: inherit;
+    white-space: nowrap;
+    transition: background .15s, border-color .15s;
+}
+
+.btn:hover {
+    background: #f1f3f4;
+}
+
+.btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.btn.btn-primary {
+    background: var(--clr-primary);
+    border-color: var(--clr-primary);
+    color: #fff;
+}
+
+.btn.btn-primary:hover {
+    background: var(--clr-primary-dark);
+}
+
+/* ── App header ────────────────────────────────────────────────────────── */
+
+#app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: var(--header-h);
+    padding: 0 1rem;
+    background: var(--clr-surface);
+    border-bottom: 1px solid var(--clr-border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+}
+
+.app-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--clr-primary);
+    margin-right: auto;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+
+.toggle-label,
+.sort-label {
+    display: flex;
+    align-items: center;
+    gap: .35em;
+    cursor: pointer;
+    color: var(--clr-text-muted);
+}
+
+#sort-select {
+    padding: .3em .5em;
+    border: 1px solid var(--clr-border);
+    border-radius: 4px;
+    font: inherit;
+    background: var(--clr-surface);
+    cursor: pointer;
+}
+
+/* ── Upload overlay ────────────────────────────────────────────────────── */
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-popover {
+    position: relative;
+    background: var(--clr-surface);
+    border-radius: 8px;
+    padding: 2rem;
+    width: min(520px, 95vw);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.close-btn {
+    position: absolute;
+    top: .75rem;
+    right: .75rem;
+    font-size: 1.25rem;
+    line-height: 1;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--clr-text-muted);
+}
+
+.close-btn:hover {
+    color: var(--clr-text);
+}
+
+.drop-zone {
+    border: 2px dashed var(--clr-border);
+    border-radius: 6px;
+    padding: 2rem 1rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    transition: border-color .15s, background .15s;
+}
+
+.drop-zone.drag-over {
+    border-color: var(--clr-primary);
+    background: #e8f0fe;
+}
+
+.file-status {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    font-size: .9rem;
+    color: var(--clr-text-muted);
+}
+
+.file-status .loaded {
+    color: #188038;
+}
+
+.file-status .error {
+    color: var(--clr-danger);
+}
+
+.upload-errors {
+    color: var(--clr-danger);
+    font-size: .875rem;
+    min-height: 1.25em;
+}
+
+/* ── Workboard layout ──────────────────────────────────────────────────── */
+
+#workboard {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.workboard-header {
+    position: sticky;
+    top: var(--header-h);
+    z-index: 50;
+    display: flex;
+    background: var(--clr-surface);
+    border-bottom: 2px solid var(--clr-border);
+    font-weight: 600;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--clr-text-muted);
+}
+
+.col-jobs {
+    flex: 0 0 var(--col-jobs-w);
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--clr-border);
+}
+
+.col-gantt {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.col {
+    padding: .5rem .4rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.col-drag {
+    flex: 0 0 28px;
+}
+
+.col-priority {
+    flex: 0 0 76px;
+}
+
+.col-team-priority {
+    flex: 0 0 76px;
+}
+
+.col-client {
+    flex: 1 1 80px;
+}
+
+.col-initiative {
+    flex: 1 1 80px;
+}
+
+.col-job-name {
+    flex: 2 1 120px;
+}
+
+.col-job-key {
+    flex: 0 0 70px;
+}
+
+/* ── Job rows ──────────────────────────────────────────────────────────── */
+
+#job-rows {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.job-row {
+    display: flex;
+    border-bottom: 1px solid var(--clr-border);
+    height: var(--row-h);
+    transition: background .1s;
+}
+
+.job-row:hover {
+    background: #f8f9ff;
+}
+
+.job-row.dragging {
+    opacity: .5;
+}
+
+.job-row.drag-target {
+    border-top: 2px solid var(--clr-primary);
+}
+
+.job-row .col-jobs {
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--clr-text);
+}
+
+.drag-handle {
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--clr-text-muted);
+    user-select: none;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Priority badge */
+.priority-badge {
+    display: inline-block;
+    padding: .1em .45em;
+    border-radius: 3px;
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.priority-badge.high {
+    background: #fce8e6;
+    color: #c5221f;
+}
+
+.priority-badge.medium {
+    background: #fef7e0;
+    color: #8a6200;
+}
+
+.priority-badge.low {
+    background: #e6f4ea;
+    color: #137333;
+}
+
+/* Editable priority select */
+select.priority-select {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+    padding: 0 .25em;
+}
+
+/* ── Gantt area ────────────────────────────────────────────────────────── */
+
+.gantt-row {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.gantt-header-inner {
+    display: flex;
+    height: 100%;
+    position: relative;
+}
+
+.gantt-week-label {
+    position: absolute;
+    top: 0;
+    font-size: .7rem;
+    color: var(--clr-text-muted);
+    padding-left: 2px;
+    white-space: nowrap;
+}
+
+.gantt-day-tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 1px solid var(--clr-border);
+}
+
+.gantt-day-tick.today {
+    border-left-color: var(--clr-primary);
+    border-left-width: 2px;
+}
+
+/* Stage bars */
+.stage-bar {
+    position: absolute;
+    top: 20%;
+    height: 60%;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: filter .1s;
+}
+
+.stage-bar:hover {
+    filter: brightness(.9);
+}
+
+.stage-bar.actual {
+    background: var(--clr-stage-actual);
+}
+
+.stage-bar.planned {
+    background: var(--clr-stage-planned);
+    border: 1px solid var(--clr-primary);
+}
+
+.stage-bar.inprog {
+    background: var(--clr-stage-inprog);
+}
+
+/* Resize handles */
+.stage-bar .resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: ew-resize;
+}
+
+.stage-bar .resize-handle.left {
+    left: 0;
+}
+
+.stage-bar .resize-handle.right {
+    right: 0;
+}

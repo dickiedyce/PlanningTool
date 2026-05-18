@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Draftsman</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+    <!-- ── Header ─────────────────────────────────────────────────────────── -->
+    <header id="app-header">
+        <h1 class="app-title">Draftsman</h1>
+
+        <div class="header-controls">
+            <button id="btn-upload"  class="btn btn-primary">Upload files</button>
+            <button id="btn-export"  class="btn" disabled>Export CSV</button>
+
+            <label class="toggle-label">
+        <input type="checkbox" id="toggle-working-days" checked />
+        Working days only
+      </label>
+
+            <label class="sort-label" for="sort-select">Sort by</label>
+            <select id="sort-select">
+        <option value="">— manual order —</option>
+        <option value="client">Client</option>
+        <option value="initiative">Initiative</option>
+        <option value="priority">Priority</option>
+        <option value="teamPriority">Team Priority</option>
+        <option value="jobName">Job Name</option>
+        <option value="startDate">Start date</option>
+        <option value="endDate">End date</option>
+      </select>
+        </div>
+    </header>
+
+    <!-- ── Upload pop-over ──────────────────────────────────────────────── -->
+    <div id="upload-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-label="Upload files">
+        <div class="upload-popover">
+            <button class="close-btn" id="btn-close-upload" aria-label="Close">&times;</button>
+            <h2>Upload CSV files</h2>
+
+            <div class="drop-zone" id="drop-zone" role="region" aria-label="Drop zone">
+                <p>Drag &amp; drop both CSV files here, or click to browse</p>
+                <input type="file" id="file-input" accept=".csv" multiple hidden />
+                <button class="btn" id="btn-browse">Browse files&hellip;</button>
+            </div>
+
+            <ul class="file-status" id="file-status">
+                <li id="status-templates">workboard_stage_templates.csv — <em>not loaded</em></li>
+                <li id="status-dates">workboard_stage_dates.csv — <em>not loaded</em></li>
+            </ul>
+
+            <div id="upload-errors" class="upload-errors" role="alert" aria-live="polite"></div>
+
+            <button class="btn btn-primary" id="btn-load" disabled>Load planner</button>
+        </div>
+    </div>
+
+    <!-- ── Main workboard ──────────────────────────────────────────────── -->
+    <main id="workboard" class="hidden">
+
+        <!-- Sticky table header -->
+        <div id="workboard-header" class="workboard-header">
+            <div class="col-jobs">
+                <span class="col col-drag"></span>
+                <span class="col col-priority">Priority</span>
+                <span class="col col-team-priority">Team&nbsp;Priority</span>
+                <span class="col col-client">Client</span>
+                <span class="col col-initiative">Initiative</span>
+                <span class="col col-job-name">Job&nbsp;Name</span>
+                <span class="col col-job-key">Key</span>
+            </div>
+            <div class="col-gantt" id="gantt-header">
+                <!-- Rendered by gantt.js -->
+            </div>
+        </div>
+
+        <!-- Scrollable job rows -->
+        <div id="job-rows">
+            <!-- Rendered by app.js / gantt.js -->
+        </div>
+
+    </main>
+
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>

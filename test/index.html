@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Draftsman — Tests</title>
+    <link rel="stylesheet" href="https://unpkg.com/mocha@10/mocha.css" />
+</head>
+
+<body>
+    <div id="mocha"></div>
+
+    <script src="https://unpkg.com/mocha@10/mocha.js"></script>
+    <script src="https://unpkg.com/chai@4/chai.js"></script>
+
+    <script>
+    mocha.setup({ ui: 'bdd', reporter: 'html' });
+    window.expect = chai.expect;
+  </script>
+
+    <!-- Test suites -->
+    <script type="module">
+    // Import test modules sequentially so Mocha registers all suites before run()
+    await import('./csv.test.js');
+    await import('./dates.test.js');
+    mocha.run();
+  </script>
+</body>
+
+</html>
