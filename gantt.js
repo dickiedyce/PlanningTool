@@ -116,8 +116,8 @@ export function buildTimeline(jobs, workingDaysMode) {
   // Apply calendar-day padding (consistent in both modes).
   // In working-days mode, dateToX will compress weekend days to zero width,
   // but the timeline origin stays fixed so bars don't shift when toggling modes.
-  startDate = subCalendarDays(minDate, PADDING_WD);
-  endDate = addCalendarDays(maxDate, PADDING_WD);
+  let startDate = subCalendarDays(minDate, PADDING_WD);
+  let endDate = addCalendarDays(maxDate, PADDING_WD);
 
   // Snap startDate/endDate to working days in working-days mode for cleaner display
   if (workingDaysMode) {
