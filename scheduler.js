@@ -86,6 +86,19 @@ export function recalculateFromStage(job, stageIndex, workingDaysMode) {
   // Deep-clone stages so we don't mutate the original
   const stages = job.stages.map((s) => ({ ...s }));
 
+  // Pre-calculate original durations for all stages BEFORE any modifications
+  // so that subsequent iterations use the original, not the previously-recalculated values
+  const originalDurations = stages.map((stage) => {
+    const start = parseDate(stage.plannedStart);
+    const end = parseDate(stage.plannedEnd);
+    if (start && end) {
+      return workingDaysMode
+        ? workingDaysBetween(start, end)
+        : Math.round((end - start) / (24 * 60 * 60 * 1000));
+    }
+    return stage.defaultDurationDays;
+  });
+
   // Determine the baseline end-date from the stage just before the pivot
   let baseEnd = null;
   if (stageIndex > 0) {
@@ -129,17 +142,8 @@ export function recalculateFromStage(job, stageIndex, workingDaysMode) {
       console.log(`[recalc] stage[${i}] PRESERVED at ${start.toDateString()}`);
     }
 
-    // Preserve the currently allocated duration rather than the template default
-    const currentStart = parseDate(stage.plannedStart);
-    const currentEnd = parseDate(stage.plannedEnd);
-    let durationDays;
-    if (currentStart && currentEnd) {
-      durationDays = workingDaysMode
-        ? workingDaysBetween(currentStart, currentEnd)
-        : Math.round((currentEnd - currentStart) / (24 * 60 * 60 * 1000));
-    } else {
-      durationDays = stage.defaultDurationDays;
-    }
+    // Preserve the originally-allocated duration (not the previously-recalculated one)
+    const durationDays = originalDurations[i];
 
     const end = addDays(start, durationDays, workingDaysMode);
     console.log(
