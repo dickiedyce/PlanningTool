@@ -5,6 +5,8 @@
  * drag-and-drop, and export button.
  */
 
+const APP_VERSION = "0.2.2";
+
 import { parseTemplates, parseStageDates } from "./csv.js";
 import { renderTimeline, renderKey } from "./gantt.js";
 import { recalculateFromStage } from "./scheduler.js";
@@ -567,43 +569,76 @@ function wireRowDrag(row, job) {
   });
 
   row.addEventListener("dragover", (e) => {
-    if (dragSrcKey && dragSrcKey !== job.jobKey) {
+    if (dragSrcKey) {
       e.preventDefault();
-      document
-        .querySelectorAll(".job-row")
-        .forEach((r) => r.classList.remove("drag-target"));
-      row.classList.add("drag-target");
+      if (dragSrcKey !== job.jobKey) {
+        document
+          .querySelectorAll(".job-row")
+          .forEach((r) => r.classList.remove("drag-target"));
+        row.classList.add("drag-target");
+      }
     }
   });
 
-  row.addEventListener("drop", (e) => {
-    e.preventDefault();
-    if (!dragSrcKey || dragSrcKey === job.jobKey) return;
+  // Use capturing phase (third param = true) so the drop listener fires on the row
+  // even if the drop event occurs on a child element (drop events don't bubble)
+  row.addEventListener(
+    "drop",
+    (e) => {
+      console.log(
+        `[drop] dragSrcKey=${dragSrcKey}, targetJobKey=${job.jobKey}, target=${e.target.className}`,
+      );
 
-    const srcJob = state.jobs.find((j) => j.jobKey === dragSrcKey);
-    if (!srcJob) return;
+      // Only handle drops that target this row or its descendants
+      if (!(e.target === row || row.contains(e.target))) {
+        console.log("[drop] target not in this row, ignoring");
+        return;
+      }
 
-    // If a named sort is currently active, freeze the displayed order as
-    // the manual order before switching, so the drag result is predictable.
-    if (el.sortSelect.value !== "") {
-      sortedJobs().forEach((j, i) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!dragSrcKey || dragSrcKey === job.jobKey) {
+        console.log(
+          "[drop] no drag in progress or dragging same row, ignoring",
+        );
+        return;
+      }
+
+      const srcJob = state.jobs.find((j) => j.jobKey === dragSrcKey);
+      if (!srcJob) {
+        console.log(`[drop] source job not found: ${dragSrcKey}`);
+        return;
+      }
+
+      console.log(
+        `[drop] reordering: moving ${dragSrcKey} to drop on ${job.jobKey}`,
+      );
+
+      // If a named sort is currently active, freeze the displayed order as
+      // the manual order before switching, so the drag result is predictable.
+      if (el.sortSelect.value !== "") {
+        sortedJobs().forEach((j, i) => {
+          j.rowOrder = i;
+        });
+        el.sortSelect.value = "";
+      }
+
+      // Reorder within the committed manual order
+      const ordered = [...state.jobs].sort((a, b) => a.rowOrder - b.rowOrder);
+      const arr = reorderJobs(ordered, dragSrcKey, job.jobKey);
+
+      arr.forEach((j, i) => {
         j.rowOrder = i;
       });
-      el.sortSelect.value = "";
-    }
+      state.jobs = arr;
+      state.dirty = true;
 
-    // Reorder within the committed manual order
-    const ordered = [...state.jobs].sort((a, b) => a.rowOrder - b.rowOrder);
-    const arr = reorderJobs(ordered, dragSrcKey, job.jobKey);
-
-    arr.forEach((j, i) => {
-      j.rowOrder = i;
-    });
-    state.jobs = arr;
-    state.dirty = true;
-
-    renderWorkboard();
-  });
+      console.log("[drop] renderWorkboard() called");
+      renderWorkboard();
+    },
+    true,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -623,6 +658,13 @@ window.addEventListener("beforeunload", (e) => {
 
 document.addEventListener("DOMContentLoaded", () => {
   resolveElements();
+
+  // Set version number in header
+  const versionEl = document.getElementById("version");
+  if (versionEl) {
+    versionEl.textContent = `v${APP_VERSION}`;
+  }
+
   wireUploadPopover();
   wireWorkingDaysToggle();
   wireSortControls();

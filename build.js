@@ -55,6 +55,7 @@ const JS_MODULES = [
   "csv.js",
   "scheduler.js",
   "export.js",
+  "order.js",
   "gantt.js",
   "app.js",
 ];
