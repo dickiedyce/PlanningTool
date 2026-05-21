@@ -18,7 +18,7 @@ import {
 // Pixels per calendar day — matches CSS --gantt-day-w
 const DAY_WIDTH = 28;
 // Working-day padding added before the earliest date and after the latest
-const PADDING_WD = 5;
+const PADDING_WD = 20;
 
 // ---------------------------------------------------------------------------
 // Internal helpers
