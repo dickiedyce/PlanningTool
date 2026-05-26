@@ -5,7 +5,7 @@
  * drag-and-drop, and export button.
  */
 
-const APP_VERSION = "0.2.2";
+const APP_VERSION = "0.2.3";
 
 import { parseTemplates, parseStageDates } from "./csv.js";
 import { renderTimeline, renderKey } from "./gantt.js";
@@ -60,6 +60,7 @@ function resolveElements() {
     btnExport: document.getElementById("btn-export"),
     toggleWD: document.getElementById("toggle-working-days"),
     sortSelect: document.getElementById("sort-select"),
+    filterSelect: document.getElementById("filter-select"),
 
     overlay: document.getElementById("upload-overlay"),
     dropTemplates: document.getElementById("drop-templates"),
@@ -81,6 +82,7 @@ function resolveElements() {
     stageKey: document.getElementById("stage-key"),
     btnKey: document.getElementById("btn-key"),
     keyPopover: document.getElementById("key-popover"),
+    responsibleList: document.getElementById("responsible-list"),
   };
 }
 
@@ -234,9 +236,16 @@ function priorityRank(p) {
 function sortedJobs() {
   if (!state.jobs) return [];
   const key = el.sortSelect.value;
-  if (!key) return [...state.jobs].sort((a, b) => a.rowOrder - b.rowOrder);
+  // Apply filtering first (if present)
+  let arr = [...state.jobs];
+  const filter = el.filterSelect ? el.filterSelect.value : "";
+  if (filter) {
+    arr = arr.filter((j) => (j.responsible ?? "") === filter);
+  }
 
-  return [...state.jobs].sort((a, b) => {
+  if (!key) return arr.sort((a, b) => a.rowOrder - b.rowOrder);
+
+  return arr.sort((a, b) => {
     if (key === "priority")
       return priorityRank(a.priority) - priorityRank(b.priority);
     if (key === "teamPriority")
@@ -252,6 +261,44 @@ function wireSortControls() {
   el.sortSelect.addEventListener("change", () => {
     if (state.jobs) renderWorkboard();
   });
+  if (el.filterSelect) {
+    el.filterSelect.addEventListener("change", () => {
+      if (state.jobs) renderWorkboard();
+    });
+  }
+}
+
+function populateResponsibleFilterAndList() {
+  if (!state.jobs || !el) return;
+  const names = Array.from(
+    new Set(
+      state.jobs.map((j) => j.responsible ?? "").filter((s) => s && s.trim()),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+
+  // Populate filter select
+  if (el.filterSelect) {
+    const prev = el.filterSelect.value;
+    el.filterSelect.innerHTML =
+      '<option value="">— all —</option>' +
+      names
+        .map((n) => `<option value="${escAttr(n)}">${esc(n)}</option>`)
+        .join("");
+    // restore previous selection if still present
+    if (
+      prev &&
+      Array.from(el.filterSelect.options).some((o) => o.value === prev)
+    ) {
+      el.filterSelect.value = prev;
+    }
+  }
+
+  // Populate datalist suggestions
+  if (el.responsibleList) {
+    el.responsibleList.innerHTML = names
+      .map((n) => `<option value="${escAttr(n)}"></option>`)
+      .join("");
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -303,6 +350,7 @@ function showWorkboard() {
 }
 
 function renderWorkboard() {
+  populateResponsibleFilterAndList();
   renderJobRows(sortedJobs());
   renderTimeline(
     el.ganttHeader,
@@ -371,6 +419,9 @@ function buildJobRow(job) {
           ${priorityOptions(job.teamPriority)}
         </select>
       </span>
+      <span class="col col-responsible">
+        <input class="responsible-input" list="responsible-list" value="${escAttr(job.responsible ?? "")}" />
+      </span>
     </div>
     <div class="col-gantt gantt-row" data-job-key="${esc(job.jobKey)}"></div>
   `;
@@ -388,6 +439,16 @@ function buildJobRow(job) {
 
   // Rich info-cell hover tooltip
   wireInfoTooltip(row.querySelector(".col-jobs"), job);
+
+  // Responsible input
+  const respInput = row.querySelector(".responsible-input");
+  if (respInput) {
+    respInput.addEventListener("change", () => {
+      job.responsible = respInput.value;
+      state.dirty = true;
+      populateResponsibleFilterAndList();
+    });
+  }
 
   return row;
 }
@@ -515,6 +576,14 @@ function esc(str) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function escAttr(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function priorityOptions(selected) {
