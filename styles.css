@@ -430,7 +430,7 @@ select.priority-select {
 /* ── Gantt area ────────────────────────────────────────────────────────── */
 
 .gantt-row {
-    flex: 1;
+    flex: none;
     position: relative;
     overflow: hidden;
 }
