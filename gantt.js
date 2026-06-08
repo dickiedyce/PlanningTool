@@ -503,12 +503,29 @@ function buildBarTooltip(stage, spec) {
 }
 
 function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
-  // Bars whose end date is in the past are read-only
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  if (spec.end < today) {
+  const isPast = spec.end < today;
+
+  // Determine what interaction is allowed on this bar
+  const isNotStarted = stage.status === "NotStarted";
+  const isInProgress = stage.status === "InProgress";
+
+  if (isPast && !isNotStarted && !isInProgress) {
+    // Complete/actual/blocked bars in the past are read-only
     bar.classList.add("bar-past");
     return;
+  }
+
+  // Not-started bars: full move + resize (even if in the past)
+  // In-progress bars: right-handle resize only (extend end date)
+  const allowMove = isNotStarted;
+  const allowLeftResize = isNotStarted;
+  const allowRightResize = true; // always allowed (not-started + in-progress)
+
+  // Visually hide the left handle on in-progress past bars (only right resize allowed)
+  if (isPast && isInProgress) {
+    bar.classList.add("resize-right-only");
   }
 
   bar.addEventListener("pointerdown", (e) => {
@@ -519,6 +536,11 @@ function wireBarInteraction(bar, stage, spec, tl, job, stageIndex, onUpdate) {
     const isLeft = e.target.classList.contains("left");
     const isRight = e.target.classList.contains("right");
     const isMove = !isLeft && !isRight;
+
+    // Block interactions that aren't allowed for this bar type
+    if (isMove && !allowMove) return;
+    if (isLeft && !allowLeftResize) return;
+    if (isRight && !allowRightResize) return;
 
     const startX = e.clientX;
     const origLeft = parseFloat(bar.style.left);

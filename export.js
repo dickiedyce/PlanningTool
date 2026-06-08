@@ -13,6 +13,9 @@
 const UPDATED_JOB_FIELDS = {
   Priority: (job) => job.priority,
   "Team Priority": (job) => job.teamPriority,
+  Architect: (job) => job.architect,
+  Developer: (job) => job.developer,
+  Tester: (job) => job.tester,
 };
 
 // Stage fields the app may update (mapped from the stage object)

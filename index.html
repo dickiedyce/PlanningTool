@@ -29,11 +29,26 @@
         <option value="">— manual order —</option>
         <option value="client">Client</option>
         <option value="initiative">Initiative</option>
-        <option value="priority">Priority</option>
-        <option value="teamPriority">Team Priority</option>
+        <option value="priority">Form Priority</option>
+        <option value="teamPriority">Current Priority</option>
         <option value="jobName">Job Name</option>
         <option value="startDate">Start date</option>
         <option value="endDate">End date</option>
+      </select>
+
+            <label class="filter-label" for="filter-member">Member</label>
+            <select id="filter-member">
+        <option value="">— all —</option>
+      </select>
+
+            <label class="filter-label" for="filter-client">Client</label>
+            <select id="filter-client">
+        <option value="">— all —</option>
+      </select>
+
+            <label class="filter-label" for="filter-initiative">Initiative</label>
+            <select id="filter-initiative">
+        <option value="">— all —</option>
       </select>
         </div>
     </header>
@@ -90,9 +105,8 @@
                 <span class="col col-job-key">Key</span>
                 <span class="col col-job-name">Job&nbsp;Name</span>
                 <span class="col col-client">Client</span>
-                <span class="col col-initiative">Initiative</span>
-                <span class="col col-priority">P</span>
-                <span class="col col-team-priority">TP</span>
+                <span class="col col-priority">FP</span>
+                <span class="col col-team-priority">CP</span>
             </div>
             <div class="col-gantt" id="gantt-header">
                 <!-- Rendered by gantt.js -->

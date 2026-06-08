@@ -315,9 +315,25 @@ body {
     flex: 1 1 70px;
 }
 
-.col-initiative {
-    flex: 1 1 70px;
+
+
+.filter-label {
+    display: flex;
+    align-items: center;
+    gap: .35em;
+    cursor: pointer;
+    color: var(--clr-text-muted);
 }
+
+.filter-label+select {
+    padding: .3em .5em;
+    border: 1px solid var(--clr-border);
+    border-radius: 4px;
+    font: inherit;
+    background: var(--clr-surface);
+    cursor: pointer;
+}
+
 
 .col-job-name {
     flex: 3 1 100px;
@@ -500,6 +516,16 @@ select.priority-select {
     z-index: 1;
 }
 
+/* Not-started bars must sit above in-progress/actual bars
+   so they remain clickable when overlapping. */
+.stage-bar.planned {
+    z-index: 3;
+}
+
+.stage-bar.outline {
+    z-index: 2;
+}
+
 .stage-bar:hover {
     filter: brightness(.9);
 }
@@ -655,6 +681,11 @@ select.priority-select {
 }
 
 .stage-bar.bar-past .resize-handle {
+    display: none;
+}
+
+/* In-progress bars in the past: hide left handle, only right resize allowed */
+.stage-bar.resize-right-only .resize-handle.left {
     display: none;
 }
 

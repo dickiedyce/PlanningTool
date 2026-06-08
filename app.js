@@ -5,7 +5,7 @@
  * drag-and-drop, and export button.
  */
 
-const APP_VERSION = "0.2.3";
+const APP_VERSION = "0.3.4";
 
 import { parseTemplates, parseStageDates } from "./csv.js";
 import { renderTimeline, renderKey } from "./gantt.js";
@@ -60,7 +60,9 @@ function resolveElements() {
     btnExport: document.getElementById("btn-export"),
     toggleWD: document.getElementById("toggle-working-days"),
     sortSelect: document.getElementById("sort-select"),
-    filterSelect: document.getElementById("filter-select"),
+    filterMember: document.getElementById("filter-member"),
+    filterClient: document.getElementById("filter-client"),
+    filterInitiative: document.getElementById("filter-initiative"),
 
     overlay: document.getElementById("upload-overlay"),
     dropTemplates: document.getElementById("drop-templates"),
@@ -82,7 +84,6 @@ function resolveElements() {
     stageKey: document.getElementById("stage-key"),
     btnKey: document.getElementById("btn-key"),
     keyPopover: document.getElementById("key-popover"),
-    responsibleList: document.getElementById("responsible-list"),
   };
 }
 
@@ -233,15 +234,47 @@ function priorityRank(p) {
   return PRIORITY_ORDER[p] ?? 3;
 }
 
+/** Collect all unique non-empty names across architect/developer/tester */
+function allTeamMembers(jobs) {
+  const set = new Set();
+  for (const j of jobs) {
+    for (const role of [j.architect, j.developer, j.tester]) {
+      if (role && role.trim()) {
+        // entries can be semicolon-separated ("Kamil Karwacki; Bijayalaxmi Sahoo")
+        role.split(";").forEach((s) => {
+          const n = s.trim();
+          if (n) set.add(n);
+        });
+      }
+    }
+  }
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
+/** Check whether a job involves a given team member (across all three roles) */
+function jobHasMember(job, member) {
+  for (const role of [job.architect, job.developer, job.tester]) {
+    if (role && role.split(";").some((s) => s.trim() === member)) return true;
+  }
+  return false;
+}
+
 function sortedJobs() {
   if (!state.jobs) return [];
   const key = el.sortSelect.value;
-  // Apply filtering first (if present)
   let arr = [...state.jobs];
-  const filter = el.filterSelect ? el.filterSelect.value : "";
-  if (filter) {
-    arr = arr.filter((j) => (j.responsible ?? "") === filter);
-  }
+
+  // Apply member filter
+  const member = el.filterMember ? el.filterMember.value : "";
+  if (member) arr = arr.filter((j) => jobHasMember(j, member));
+
+  // Apply client filter
+  const client = el.filterClient ? el.filterClient.value : "";
+  if (client) arr = arr.filter((j) => (j.client ?? "") === client);
+
+  // Apply initiative filter
+  const initiative = el.filterInitiative ? el.filterInitiative.value : "";
+  if (initiative) arr = arr.filter((j) => (j.initiative ?? "") === initiative);
 
   if (!key) return arr.sort((a, b) => a.rowOrder - b.rowOrder);
 
@@ -261,44 +294,45 @@ function wireSortControls() {
   el.sortSelect.addEventListener("change", () => {
     if (state.jobs) renderWorkboard();
   });
-  if (el.filterSelect) {
-    el.filterSelect.addEventListener("change", () => {
-      if (state.jobs) renderWorkboard();
-    });
-  }
+  [el.filterMember, el.filterClient, el.filterInitiative].forEach((sel) => {
+    if (sel) {
+      sel.addEventListener("change", () => {
+        if (state.jobs) renderWorkboard();
+      });
+    }
+  });
 }
 
-function populateResponsibleFilterAndList() {
-  if (!state.jobs || !el) return;
-  const names = Array.from(
-    new Set(
-      state.jobs.map((j) => j.responsible ?? "").filter((s) => s && s.trim()),
-    ),
-  ).sort((a, b) => a.localeCompare(b));
+function populateFilters() {
+  if (!state.jobs) return;
 
-  // Populate filter select
-  if (el.filterSelect) {
-    const prev = el.filterSelect.value;
-    el.filterSelect.innerHTML =
+  function refillSelect(sel, values) {
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML =
       '<option value="">— all —</option>' +
-      names
+      values
         .map((n) => `<option value="${escAttr(n)}">${esc(n)}</option>`)
         .join("");
-    // restore previous selection if still present
-    if (
-      prev &&
-      Array.from(el.filterSelect.options).some((o) => o.value === prev)
-    ) {
-      el.filterSelect.value = prev;
+    if (prev && Array.from(sel.options).some((o) => o.value === prev)) {
+      sel.value = prev;
     }
   }
 
-  // Populate datalist suggestions
-  if (el.responsibleList) {
-    el.responsibleList.innerHTML = names
-      .map((n) => `<option value="${escAttr(n)}"></option>`)
-      .join("");
-  }
+  // Member filter (across architect, developer, tester)
+  refillSelect(el.filterMember, allTeamMembers(state.jobs));
+
+  // Client filter
+  const clients = [
+    ...new Set(state.jobs.map((j) => j.client).filter(Boolean)),
+  ].sort();
+  refillSelect(el.filterClient, clients);
+
+  // Initiative filter
+  const initiatives = [
+    ...new Set(state.jobs.map((j) => j.initiative).filter(Boolean)),
+  ].sort();
+  refillSelect(el.filterInitiative, initiatives);
 }
 
 // ---------------------------------------------------------------------------
@@ -350,7 +384,7 @@ function showWorkboard() {
 }
 
 function renderWorkboard() {
-  populateResponsibleFilterAndList();
+  populateFilters();
   renderJobRows(sortedJobs());
   renderTimeline(
     el.ganttHeader,
@@ -408,7 +442,6 @@ function buildJobRow(job) {
       <span class="col col-job-key"    title="${esc(job.jobKey)}">${esc(job.jobKey)}</span>
       <span class="col col-job-name"   title="${esc(job.jobName)}">${esc(job.jobName)}</span>
       <span class="col col-client"     title="${esc(job.client)}">${esc(job.client)}</span>
-      <span class="col col-initiative" title="${esc(job.initiative)}">${esc(job.initiative)}</span>
       <span class="col col-priority">
         <select class="priority-select" data-field="priority">
           ${priorityOptions(job.priority)}
@@ -418,9 +451,6 @@ function buildJobRow(job) {
         <select class="priority-select" data-field="teamPriority">
           ${priorityOptions(job.teamPriority)}
         </select>
-      </span>
-      <span class="col col-responsible">
-        <input class="responsible-input" list="responsible-list" value="${escAttr(job.responsible ?? "")}" />
       </span>
     </div>
     <div class="col-gantt gantt-row" data-job-key="${esc(job.jobKey)}"></div>
@@ -439,16 +469,6 @@ function buildJobRow(job) {
 
   // Rich info-cell hover tooltip
   wireInfoTooltip(row.querySelector(".col-jobs"), job);
-
-  // Responsible input
-  const respInput = row.querySelector(".responsible-input");
-  if (respInput) {
-    respInput.addEventListener("change", () => {
-      job.responsible = respInput.value;
-      state.dirty = true;
-      populateResponsibleFilterAndList();
-    });
-  }
 
   return row;
 }
@@ -541,8 +561,11 @@ function wireInfoTooltip(cell, job) {
       `${job.jobKey}  —  ${job.jobName}`,
       `Client:     ${job.client || "—"}`,
       `Initiative: ${job.initiative || "—"}`,
-      `Priority:   ${job.priority || "—"}   Team: ${job.teamPriority || "—"}`,
+      `Form Pri:   ${job.priority || "—"}   Curr Pri: ${job.teamPriority || "—"}`,
     ];
+    if (job.architect) lines.push(`Architect:  ${job.architect}`);
+    if (job.developer) lines.push(`Developer:  ${job.developer}`);
+    if (job.tester) lines.push(`Tester:     ${job.tester}`);
     if (planned.start || planned.end)
       lines.push(`Planned: ${planned.start || "?"} → ${planned.end || "?"}`);
     if (actual.start || actual.end)
