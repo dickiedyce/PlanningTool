@@ -393,6 +393,7 @@ function renderWorkboard() {
     state.workingDaysMode,
     onGanttUpdate,
   );
+  invalidateFrozenCols();
 }
 
 function onGanttUpdate(job, stageIndex) {
@@ -742,14 +743,25 @@ function wireRowDrag(row, job) {
  * horizontal scroll.  Nested position:sticky (top + left) doesn't work
  * in browsers, so we translate them by the scroll offset instead.
  */
+let _frozenCols = null;
+let _frozenRafId = 0;
+
+function _updateFrozenCols() {
+  _frozenRafId = 0;
+  const scrollLeft = el.workboard.scrollLeft;
+  if (!_frozenCols) _frozenCols = el.workboard.querySelectorAll(".col-jobs");
+  for (let i = 0; i < _frozenCols.length; i++) {
+    _frozenCols[i].style.transform = `translateX(${scrollLeft}px)`;
+  }
+}
+
+function invalidateFrozenCols() {
+  _frozenCols = null;
+}
+
 function wireFrozenColumns() {
   el.workboard.addEventListener("scroll", () => {
-    const scrollLeft = el.workboard.scrollLeft;
-    // Every .col-jobs inside the workboard (header + each job row)
-    const cols = el.workboard.querySelectorAll(".col-jobs");
-    for (const col of cols) {
-      col.style.transform = `translateX(${scrollLeft}px)`;
-    }
+    if (!_frozenRafId) _frozenRafId = requestAnimationFrame(_updateFrozenCols);
   });
 }
 
