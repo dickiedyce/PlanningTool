@@ -272,11 +272,10 @@ body {
     align-items: center;
     border-right: 1px solid var(--clr-border);
     overflow: hidden;
-    /* Sticky left panel: stays visible while the Gantt timeline scrolls
-       horizontally (#45). z-index 10 keeps it above all stage bars
-       (planned z:3, outline z:2, normal z:1). */
-    position: sticky;
-    left: 0;
+    /* Frozen left panel: pinned via JS scroll listener (nested sticky
+       left+top doesn't work in browsers). z-index 10 keeps it above
+       all stage bars (planned z:3, outline z:2, normal z:1). */
+    position: relative;
     z-index: 10;
     background: var(--clr-surface);
 }

@@ -734,6 +734,26 @@ function wireRowDrag(row, job) {
 }
 
 // ---------------------------------------------------------------------------
+// Frozen columns — JS scroll pinning
+// ---------------------------------------------------------------------------
+
+/**
+ * Pin the left-hand .col-jobs columns so they stay visible during
+ * horizontal scroll.  Nested position:sticky (top + left) doesn't work
+ * in browsers, so we translate them by the scroll offset instead.
+ */
+function wireFrozenColumns() {
+  el.workboard.addEventListener("scroll", () => {
+    const scrollLeft = el.workboard.scrollLeft;
+    // Every .col-jobs inside the workboard (header + each job row)
+    const cols = el.workboard.querySelectorAll(".col-jobs");
+    for (const col of cols) {
+      col.style.transform = `translateX(${scrollLeft}px)`;
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Warn on unsaved changes
 // ---------------------------------------------------------------------------
 
@@ -762,6 +782,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wireSortControls();
   wireExportButton();
   wireKeyPopover();
+  wireFrozenColumns();
 
   // Show the upload pop-over immediately on first load
   openUpload();
