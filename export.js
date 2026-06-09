@@ -42,16 +42,14 @@ const UPDATED_STAGE_FIELDS = {
 };
 
 /**
- * Quote a CSV field value if it contains commas, double-quotes, or newlines.
+ * Quote a CSV field value — always wraps in double-quotes to match the
+ * import format (RFC 4180).
  * @param {string} value
  * @returns {string}
  */
 function quoteField(value) {
   const str = value == null ? "" : String(value);
-  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
+  return `"${str.replace(/"/g, '""')}"`;
 }
 
 /**
