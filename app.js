@@ -342,7 +342,7 @@ function populateFilters() {
 function wireExportButton() {
   el.btnExport.addEventListener("click", () => {
     if (!state.jobs) return;
-    const csv = exportStageDates(state.jobs);
+    const csv = exportStageDates(state.jobs, state.templates);
     triggerDownload(csv, "workboard_stage_dates_updated.csv");
     state.dirty = false;
   });

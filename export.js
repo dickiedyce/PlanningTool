@@ -2,12 +2,26 @@
  * export.js — CSV export
  *
  * Serialises the in-memory job list back to workboard_stage_dates CSV format,
- * preserving original columns and ordering.
+ * matching the current template structure so that an export can be re-imported
+ * as-is (round-trip).
  *
  * Exports:
- *   exportStageDates(jobs) → string   (CSV text)
+ *   exportStageDates(jobs, templates) → string   (CSV text)
  *   triggerDownload(csvText, filename)
  */
+
+// Canonical core columns (always present, in this order)
+const CORE_COLS = [
+  "JobKey",
+  "Job Name",
+  "Client",
+  "Initiative",
+  "Priority",
+  "Team Priority",
+  "Architect",
+  "Developer",
+  "Tester",
+];
 
 // Fields the app may update on each job
 const UPDATED_JOB_FIELDS = {
@@ -42,35 +56,43 @@ function quoteField(value) {
 
 /**
  * Build a row object from a job, merging updated values back into the
- * original CSV row.
+ * original CSV row and ensuring all expected columns are present.
  * @param {Object} job
- * @returns {Object}  key → value map matching originalCsvRow's columns
+ * @param {Array}  templates  Active stage templates
+ * @returns {Object}  key → value map
  */
-function buildRow(job) {
+function buildRow(job, templates) {
   // Start from the original CSV row (preserves all unknown columns)
   const row = { ...job.originalCsvRow };
 
-  // Apply updated job-level fields
+  // Apply updated job-level fields — always write them so round-tripping works
+  // even when the original CSV was missing the columns (e.g. Architect/Developer/Tester)
   for (const [col, getter] of Object.entries(UPDATED_JOB_FIELDS)) {
-    if (col in row) {
-      row[col] = getter(job) ?? "";
-    }
+    row[col] = getter(job) ?? "";
   }
 
   // Apply updated stage fields
   for (const stage of job.stages) {
     for (const [suffix, getter] of Object.entries(UPDATED_STAGE_FIELDS)) {
       const col = `${stage.name} ${suffix}`;
-      if (col in row) {
-        // Outline stages have phantom planned dates — never export them
-        if (
-          stage.isOutline &&
-          (suffix === "Planned Start" || suffix === "Planned End")
-        ) {
-          row[col] = "";
-        } else {
-          row[col] = getter(stage) ?? "";
-        }
+      // Outline stages have phantom planned dates — never export them
+      if (
+        stage.isOutline &&
+        (suffix === "Planned Start" || suffix === "Planned End")
+      ) {
+        row[col] = "";
+      } else {
+        row[col] = getter(stage) ?? "";
+      }
+    }
+  }
+
+  // Ensure every template stage column exists (even if the job has no data)
+  for (const tmpl of templates) {
+    for (const suffix of EXPORT_STAGE_SUFFIXES) {
+      const col = `${tmpl.name} ${suffix}`;
+      if (!(col in row)) {
+        row[col] = "";
       }
     }
   }
@@ -79,22 +101,46 @@ function buildRow(job) {
 }
 
 /**
+ * Stage suffixes exported per stage.
+ * (Named differently from csv.js's STAGE_SUFFIXES to avoid a const collision
+ *  when build.js inlines both files into a single script.)
+ * @type {string[]}
+ */
+const EXPORT_STAGE_SUFFIXES = [
+  "Status",
+  "Actual Start",
+  "Actual End",
+  "Planned Start",
+  "Planned End",
+];
+
+/**
  * Serialise an array of jobs to a CSV string.
- * Column order is taken from the first job's originalCsvRow.
+ * Column order is built from the current template structure so that the
+ * exported CSV can be re-imported as-is.
  *
  * @param {Array<Object>} jobs
+ * @param {Array}         templates  Active stage templates from parseTemplates()
  * @returns {string}
  */
-export function exportStageDates(jobs) {
+export function exportStageDates(jobs, templates) {
   if (!jobs || jobs.length === 0) return "";
 
-  // Collect the full superset of columns, preserving order from each row
-  const seenCols = new Set();
-  const allCols = [];
+  // Build the canonical column list: core fields, then template stage columns
+  const allCols = [...CORE_COLS];
+
+  for (const tmpl of templates) {
+    for (const suffix of EXPORT_STAGE_SUFFIXES) {
+      allCols.push(`${tmpl.name} ${suffix}`);
+    }
+  }
+
+  // Append any extra columns from originalCsvRow that are not already listed
+  const colSet = new Set(allCols);
   for (const job of jobs) {
     for (const col of Object.keys(job.originalCsvRow)) {
-      if (!seenCols.has(col)) {
-        seenCols.add(col);
+      if (!colSet.has(col)) {
+        colSet.add(col);
         allCols.push(col);
       }
     }
@@ -103,7 +149,7 @@ export function exportStageDates(jobs) {
   const header = allCols.map(quoteField).join(",");
 
   const dataRows = jobs.map((job) => {
-    const row = buildRow(job);
+    const row = buildRow(job, templates);
     return allCols.map((col) => quoteField(row[col] ?? "")).join(",");
   });
 

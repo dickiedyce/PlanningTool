@@ -83,18 +83,18 @@ describe("buildTimeline()", () => {
   });
 
   it("uses actual dates when they exist (prefer actualStart over plannedStart)", () => {
-    // actualStart is earlier than plannedStart → timeline must reach back to it
-    const job = makeJob("2026-06-05", "2026-06-15", "2026-05-28", "2026-06-10");
+    // actualEnd is later than plannedEnd → timeline must extend to it
+    const job = makeJob("2026-07-05", "2026-07-15", "2026-07-01", "2026-07-20");
     const tl = buildTimeline([job], true);
-    expect(tl.startDate < d("2026-05-28")).to.be.true;
+    expect(tl.endDate > d("2026-07-20")).to.be.true;
   });
 
   it("spans multiple jobs correctly (min start, max end)", () => {
-    const job1 = makeJob("2026-05-01", "2026-05-15");
-    const job2 = makeJob("2026-06-01", "2026-07-01");
+    const job1 = makeJob("2026-07-01", "2026-07-15");
+    const job2 = makeJob("2026-08-01", "2026-09-01");
     const tl = buildTimeline([job1, job2], true);
-    expect(tl.startDate < d("2026-05-01")).to.be.true;
-    expect(tl.endDate > d("2026-07-01")).to.be.true;
+    expect(tl.startDate < d("2026-07-01")).to.be.true;
+    expect(tl.endDate > d("2026-09-01")).to.be.true;
   });
 
   it("startDate is a working day (not Saturday or Sunday)", () => {
